@@ -1,0 +1,184 @@
+Update the database to ensure the system is able to answer the following questions (scour the internet for factually accurate answers). Organize the response into bullet points if it is longer than 3 sentences:
+
+
+# ✅ **MASTER LIST OF CUSTOMER QUESTIONS (EXPANDED)**
+
+### **A. Accommodation, Rooms & Unit Types**
+
+* Do you have rooms/units suitable for 4 guests?
+* Do you have family suites?
+* Do you have interconnected rooms?
+* Do you have rooms suitable for couples / honeymooners / solo travellers / seniors / children / disabled guests?
+* Is there a unit suitable for groups?
+* What is the maximum occupancy per room?
+* Are extra beds allowed?
+* Is there a baby cot available?
+* What amenities are included in the room?
+* Is the room facing the sea / mountain / garden?
+* Do rooms come with a balcony?
+* Is housekeeping done daily?
+* Is there air-conditioning?
+* Is there Wi-Fi in the rooms?
+* Can we request early check-in/late check-out?
+* Are the rooms soundproof?
+* Do you offer smoking / non-smoking rooms?
+* Are pets allowed in the rooms?
+* Is simple cooking allowed in the unit?
+* Are kitchenettes provided?
+* Do rooms have fridges / microwaves?
+* Do you provide toiletries?
+* Do rooms come with a safe box?
+
+---
+
+### **B. Pricing, Packages & Payment**
+
+* How much per night for this unit?
+* What packages do you offer? (All-inclusive, full-board, half-board, room only)
+* What is the difference between package types?
+* Are meals included in the room price?
+* What promotions are available now?
+* Are there special rates for Malaysians / corporate groups / seniors / children?
+* How much is the deposit?
+* What is the cancellation policy?
+* What payment methods are accepted?
+* Do you offer instalment plans?
+* Is there a mandatory resort fee?
+* Are taxes included in the quoted price?
+* Do you charge for extra guests or children?
+
+---
+
+### **C. Check-In, Check-Out, Arrivals & Departures**
+
+* What time is check-in/check-out?
+* Can we check in early?
+* Can we check out late?
+* Do you have luggage storage if we arrive early?
+* Can the hotel arrange transportation from the airport?
+* What documents do we need during check-in?
+
+---
+
+### **D. Activities (Indoor & Outdoor)**
+
+* What activities are available in Club Med?
+* What outdoor activities do you offer?
+* Are water sports included?
+* Do you offer snorkelling/diving?
+* Do you have guided tours?
+* Are there activities for kids?
+* Is there a kids club / babysitting service?
+* Is equipment provided for activities?
+* Do you have a gym, spa, or wellness programs?
+* Are activities included in the package or charged separately?
+* Do you have night entertainment / shows?
+
+---
+
+### **E. Food & Beverage**
+
+* What restaurants do you have?
+* Is halal food available?
+* Is the resort suitable for Muslim guests?
+* Are vegetarian / vegan / gluten-free options available?
+* Are meals included in the package?
+* What are the restaurant operating hours?
+* Do you have bars?
+* Can we request room service?
+* Can we bring outside food?
+* Do you have buffet or à la carte?
+* Do you offer special meals for infants or children?
+
+---
+
+### **F. Location, Accessibility & Travel**
+
+* What is the nearest town or city?
+* How far is the resort from the airport?
+* Do you provide transportation or shuttle service?
+* Are taxis available?
+* Is the area safe?
+* How do we get there by public transport?
+* Is parking available?
+* Is parking free or charged?
+* Are EV charging stations available?
+
+---
+
+### **G. Resort Facilities & Surroundings**
+
+* What other conveniences are nearby? (shops, restaurants, attractions)
+* Do you have an in-house shop or convenience store?
+* Can we buy souvenirs at the resort?
+* Do you have laundry service?
+* Do you have a clinic or medical staff?
+* Is there Wi-Fi throughout the resort?
+* Do you have swimming pools?
+* Do you have private beach access?
+* Is the resort wheelchair accessible?
+
+---
+
+### **H. Weather, Season & Best Time to Visit**
+
+* When is the best season to visit?
+* Does it rain a lot during certain months?
+* Are outdoor activities affected by weather?
+
+---
+
+### **I. Events & Special Requests**
+
+* Can we organise our own event?
+* Do you host weddings?
+* Do you provide meeting rooms or event spaces?
+* Do you have corporate retreat packages?
+* Can you help arrange birthday or anniversary surprises?
+* Can the room be decorated?
+* Do you have photographers?
+
+---
+
+### **J. Safety, Policies & Rules**
+
+* Is the area safe for children?
+* What are your COVID/post-COVID safety protocols?
+* What is your lost-and-found policy?
+* Do you allow drones?
+* Are pets allowed?
+* Are alcohol and smoking allowed?
+* Is there a dress code for restaurants?
+
+---
+
+### **K. Guests Demographics**
+
+* Which countries do your guests usually come from?
+* Is it suitable for international groups?
+* Is English widely spoken by staff?
+
+---
+
+### **L. Booking, Changes & Confirmation**
+
+* How do I modify my booking?
+* Can I extend my stay?
+* Can I switch rooms after booking?
+* How do I request special arrangements?
+* Will I receive a booking confirmation email?
+* Can I book for someone else?
+* Do you offer last-minute bookings?
+
+---
+
+# ✅ Want me to turn this into:
+
+✔ A **call-center knowledge base outline**
+✔ A **training script**
+✔ A **fully structured FAQ for an AI agent**
+✔ A **taxonomy for an AI search system**
+✔ A **pricing pain analysis for Club Med Malaysia**
+
+Just tell me which one you want.
+
