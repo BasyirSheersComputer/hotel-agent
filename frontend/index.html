@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resort Genius | Concierge</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar / Info Panel -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-icon">RG</div>
+                <h1>Resort Genius</h1>
+            </div>
+            
+            <div class="info-card">
+                <h2>Club Med Cherating</h2>
+                <p class="status"><span class="status-dot"></span> Concierge Online</p>
+                <div class="weather-widget">
+                    <span class="temp">28°C</span>
+                    <span class="condition">Tropical</span>
+                </div>
+            </div>
+
+            <nav class="quick-links">
+                <h3>Quick Assist</h3>
+                <button class="quick-btn" onclick="sendQuickQuery('What are the restaurant operating hours?')">
+                    <span class="icon">🍽️</span> Dining Hours
+                </button>
+                <button class="quick-btn" onclick="sendQuickQuery('What activities are available today?')">
+                    <span class="icon">🏄</span> Activities
+                </button>
+                <button class="quick-btn" onclick="sendQuickQuery('Where is the nearest hospital?')">
+                    <span class="icon">🏥</span> Medical Info
+                </button>
+                <button class="quick-btn" onclick="sendQuickQuery('Tell me about the room amenities')">
+                    <span class="icon">🛏️</span> Room Info
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-interface">
+            <header class="chat-header">
+                <div class="header-content">
+                    <h2>Guest Assistance</h2>
+                    <p>Ask me anything about the resort or local area</p>
+                </div>
+            </header>
+
+            <div id="chat-messages" class="chat-messages">
+                <div class="message agent-message">
+                    <div class="avatar">
+                        <img src="https://ui-avatars.com/api/?name=Resort+Genius&background=0F4C81&color=fff" alt="Agent">
+                    </div>
+                    <div class="message-content">
+                        <p>Welcome to Club Med Cherating! I'm your personal AI concierge. How can I assist you with your stay today?</p>
+                        <span class="timestamp">Just now</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <input type="text" id="user-input" placeholder="Type your question here..." autocomplete="off">
+                    <button id="send-btn" aria-label="Send message">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
