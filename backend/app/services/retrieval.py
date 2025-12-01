@@ -50,12 +50,43 @@ def detect_location_query(query_text: str) -> bool:
     """
     Detect if the query is asking about nearby locations/amenities.
     """
+    query_lower = query_text.lower()
+    
+    # Expanded location keywords to catch more natural language patterns
     location_keywords = [
-        "nearest", "nearby", "closest", "close to", "near the hotel",
-        "around here", "in the area", "within", "how far"
+        # Proximity-based
+        "nearest", "nearby", "closest", "close to", "near the hotel", "near me",
+        "around here", "in the area", "within", "how far",
+        
+        # Location-seeking phrases
+        "where is", "where's", "where can i find", "where can i get",
+        "where do i find", "where to find", "how do i get to",
+        
+        # Search/Find phrases
+        "find a", "find me", "find the", "show me", "direct me to",
+        "looking for", "search for", "any", "are there",
+        
+        # Local/Area modifiers
+        "local", "in town", "around", "available"
     ]
     
-    return any(keyword in query_text.lower() for keyword in location_keywords)
+    # Check for location keywords
+    if any(keyword in query_lower for keyword in location_keywords):
+        return True
+    
+    # Additional check: if query contains a recognizable place type from location.py
+    # and uses question words, it's likely a location query
+    question_words = ["where", "find", "show", "any", "is there", "are there"]
+    if any(qword in query_lower for qword in question_words):
+        # Import here to avoid circular dependency at module level
+        from .location import PLACE_TYPE_MAPPINGS
+        
+        # Check if any place type keyword is in the query
+        for place_keyword in PLACE_TYPE_MAPPINGS.keys():
+            if place_keyword in query_lower:
+                return True
+    
+    return False
 
 def is_resort_facility(query_text: str) -> bool:
     """
