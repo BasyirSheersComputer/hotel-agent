@@ -120,22 +120,36 @@ def query_rag(query_text: str):
                 }
     
     # Fallback to standard RAG for non-location queries or resort facility queries
-    embedding_function = OpenAIEmbeddings(model="text-embedding-3-small")
-    db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
+    try:
+        embedding_function = OpenAIEmbeddings(model="text-embedding-3-small")
+        
+        if not os.path.exists(CHROMA_PATH):
+            return {
+                "answer": "I apologize, but I cannot access my knowledge base at the moment. The system administrator needs to rebuild the vector database.",
+                "sources": ["System Error: Vector DB missing"]
+            }
+            
+        db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
-    # Search the DB
-    results = db.similarity_search_with_score(query_text, k=3)
+        # Search the DB
+        results = db.similarity_search_with_score(query_text, k=3)
 
-    context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-    prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-    prompt = prompt_template.format(context=context_text, question=query_text)
+        context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
+        prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+        prompt = prompt_template.format(context=context_text, question=query_text)
 
-    model = ChatOpenAI(model="gpt-4o")
-    response_text = model.invoke(prompt)
+        model = ChatOpenAI(model="gpt-4o")
+        response_text = model.invoke(prompt)
 
-    sources = [doc.metadata.get("source", None) for doc, _score in results]
-    
-    return {
-        "answer": response_text.content,
-        "sources": sources
-    }
+        sources = [doc.metadata.get("source", None) for doc, _score in results]
+        
+        return {
+            "answer": response_text.content,
+            "sources": sources
+        }
+    except Exception as e:
+        print(f"RAG Error: {str(e)}")
+        return {
+            "answer": "I'm having trouble connecting to my knowledge base. Please check your API keys and network connection.",
+            "sources": [f"System Error: {str(e)}"]
+        }
