@@ -64,10 +64,13 @@ def detect_location_query(query_text: str) -> bool:
         
         # Search/Find phrases
         "find a", "find me", "find the", "show me", "direct me to",
-        "looking for", "search for", "any", "are there",
+        "looking for", "search for", "any", "are there", "i need",
         
         # Local/Area modifiers
-        "local", "in town", "around", "available"
+        "local", "in town", "around", "available", "urgently",
+       
+        # Action phrases that imply external location
+        "fill up", "buy", "get", "visit"
     ]
     
     # Check for location keywords

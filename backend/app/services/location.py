@@ -158,13 +158,17 @@ def format_nearby_results(places: List[Dict], place_type: str) -> str:
 PLACE_TYPE_MAPPINGS = {
     "hospital": "hospital",
     "clinic": "doctor",
+    "doctor": "doctor",  # Added: singular doctor
+    "doctors": "doctor",  # Added: plural doctors
     "medical": "hospital",
     "pharmacy": "pharmacy",
+    "pharmacies": "pharmacy",  # Added: plural
     "drugstore": "pharmacy",
     "atm": "atm",
     "cash": "atm",
     "bank": "bank",
     "restaurant": "restaurant",
+    "restaurants": "restaurant",  # Added: plural
     "food": "restaurant",
     "cafe": "cafe",
     "coffee": "cafe",
@@ -172,7 +176,17 @@ PLACE_TYPE_MAPPINGS = {
     "shopping": "shopping_mall",
     "supermarket": "supermarket",
     "grocery": "supermarket",
+    "groceries": "supermarket",  # Added: plural groceries
+    "convenience": "convenience_store",  # Added: convenience stores
+    "convenience store": "convenience_store",  # Added: full phrase
+    "shop": "store",  # Added: generic shop
+    "shops": "store",  # Added: plural shops
+    "store": "store",  # Added: generic store
+    "stores": "store",  # Added: plural stores
     "gas station": "gas_station",
+    "fuel": "gas_station",  # Added: fuel
+    "fuel station": "gas_station",  # Added: fuel station
+    "car": "gas_station",  # Added: for "fill up my car" type queries
     "petrol": "gas_station",
     "hotel": "lodging",
     "accommodation": "lodging",
