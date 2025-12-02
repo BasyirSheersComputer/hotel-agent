@@ -4,7 +4,9 @@ python-dotenv
 langchain
 langchain-community
 langchain-openai
+langchain-chroma
 chromadb
 pypdf
 tiktoken
 python-multipart
+google-cloud-storage

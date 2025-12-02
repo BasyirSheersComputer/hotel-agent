@@ -1,3 +1,8 @@
+// API Configuration
+const API_BASE_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:8000'
+    : (window.API_URL || 'https://hotel-agent-backend-319072304914.us-central1.run.app');
+
 document.addEventListener('DOMContentLoaded', () => {
     const chatMessages = document.getElementById('chat-messages');
     const userInput = document.getElementById('user-input');
@@ -27,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Call API
-            const response = await fetch('http://localhost:8000/api/chat', {
+            const response = await fetch(`${API_BASE_URL}/api/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -66,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message', `${sender}-message`);
 
-        const avatarUrl = sender === 'agent' 
+        const avatarUrl = sender === 'agent'
             ? 'https://ui-avatars.com/api/?name=Resort+Genius&background=0F4C81&color=fff'
             : 'https://ui-avatars.com/api/?name=Guest&background=D4AF37&color=fff';
 
@@ -123,12 +128,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Simple formatter to handle newlines and basic markdown
         // Convert **bold** to <strong>
         let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        
+
         // Convert - list items to <li>
         // This is a basic implementation. For full markdown, a library like marked.js is better.
         // We'll just handle newlines for now to keep it simple but readable.
         formatted = formatted.replace(/\n/g, '<br>');
-        
+
         return formatted;
     }
 });
