@@ -95,30 +95,55 @@ def is_resort_facility(query_text: str) -> bool:
     """
     query_lower = query_text.lower()
     
-    # Facilities that Club Med Cherating HAS on property
-    resort_facilities = [
-        # Beach & Water
-        "beach", "sea", "ocean", "shore", "coast", "sand", "water", "swimming",
-        
-        # Pools
-        "pool", "pools", "swimming pool",
-        
-        # Restaurants & Dining (on property)
-        "mutiara", "rembulan", "pinang", "restaurant", "buffet", "dining", 
-        "breakfast", "lunch", "dinner", "bar", "food",
-        
-        # Activities & Sports
-        "trapeze", "archery", "kayak", "sailing", "tennis", "gym", "fitness",
-        "yoga", "spa", "massage", "kids club", "playground",
-        
-        # Accommodation
-        "room", "suite", "accommodation", "deluxe", "garden view",
-        
-        # Resort Areas
-        "lobby", "reception", "boutique", "shop", "parking lot"
+    # FIRST: Check for explicit resort context phrases that should ALWAYS use KB
+    # These take priority over external indicators
+    resort_context_phrases = [
+        "at the resort", "at the hotel", "on property", "in the resort",
+        "the resort", "the hotel", "resort's", "hotel's",
+        "the restaurant hours", "restaurant hours", "restaurant operating",
+        "the pool", "the gym", "the lobby", "the beach at",
+        "mutiara", "rembulan", "enak", "pinang"  # Specific restaurant names
     ]
     
-    # Check if query asks about any resort facility
+    if any(phrase in query_lower for phrase in resort_context_phrases):
+        return True
+    
+    # Explicit indicators that user is asking about EXTERNAL locations (not resort)
+    external_indicators = [
+        "local", "nearby", "nearest", "closest", "in town", "in the area",
+        "around here", "off-site", "outside", "external", "where can i find",
+        "find me", "any", "are there", "where can i buy", "where can i get"
+    ]
+    
+    # Special handling for "show me" - depends on context
+    # "show me the X" for resort facilities should use KB
+    # "show me cafes" should use Maps
+    if "show me" in query_lower:
+        # Check if it's "show me the [facility]" or "show me [specific resort name]"
+        resort_show_patterns = [
+            "show me the restaurant", "show me the pool", "show me the gym",
+            "show me the beach", "show me the lobby", "show me the bar"
+        ]
+        if any(pattern in query_lower for pattern in resort_show_patterns):
+            return True
+        # Otherwise, "show me" is an external indicator
+        external_indicators.append("show me")
+    
+    # If query has external indicators, it's NOT about resort facilities
+    # UNLESS it explicitly mentions resort/hotel context (already checked above)
+    if any(indicator in query_lower for indicator in external_indicators):
+        return False
+    
+    # Specific resort facilities (only if no external indicators)
+    resort_facilities = [
+        "pool", "pools", "swimming pool", "zen pool",
+        "trapeze", "flying trapeze", "archery", "kayak", "kayaking",
+        "sailing", "hobie cat", "tennis court", "gym", "fitness center",
+        "yoga class", "spa treatment", "kids club", "mini club",
+        "room service", "suite", "my room", "our room",
+        "lobby", "reception", "front desk", "boutique", "parking lot"
+    ]
+    
     for facility in resort_facilities:
         if facility in query_lower:
             return True
