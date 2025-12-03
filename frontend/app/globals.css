@@ -1,26 +1,63 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Color Palette - Premium Resort Theme */
+  --primary-dark: #0F4C81;
+  /* Classic Blue */
+  --primary-light: #1A5F9A;
+  --accent-gold: #D4AF37;
+  --accent-gold-hover: #C5A028;
+  --bg-gradient-start: #F0F4F8;
+  --bg-gradient-end: #E6EBF0;
+  --surface-white: rgba(255, 255, 255, 0.85);
+  --surface-glass: rgba(255, 255, 255, 0.6);
+  --text-dark: #1A202C;
+  --text-muted: #718096;
+  --border-light: rgba(255, 255, 255, 0.4);
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 4px 6px rgba(0, 0, 0, 0.05);
+
+  /* Spacing */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+
+  /* Radius */
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@theme {
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-light: var(--primary-light);
+  --color-accent-gold: var(--accent-gold);
+  --color-accent-gold-hover: var(--accent-gold-hover);
+  --color-surface-white: var(--surface-white);
+  --color-surface-glass: var(--surface-glass);
+  --color-text-dark: var(--text-dark);
+  --color-text-muted: var(--text-muted);
+  --color-border-light: var(--border-light);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-outfit);
+  --font-serif: var(--font-playfair);
+
+  --radius-lg: var(--radius-lg);
+  --radius-md: var(--radius-md);
+  --radius-sm: var(--radius-sm);
+
+  --shadow-soft: var(--shadow-soft);
+  --shadow-card: var(--shadow-card);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-outfit), sans-serif;
+  background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+  color: var(--text-dark);
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
 }
