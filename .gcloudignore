@@ -1,0 +1,36 @@
+# Ignore git
+.git/
+.gitignore
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore test files
+test_*.py
+*_test.py
+*.txt
+debug_*.py
+diagnose_*.py
+quick_*.py
+final_*.py
+comprehensive_*.py
+
+# Ignore documentation
+*.md
+!README.md
+
+# Ignore IDE
+.vscode/
+.idea/
+
+# Ignore local env
+.env
+*.env
+
+# Ignore Docker files (will be built separately)
+Dockerfile
+.dockerignore
+docker-compose.yml

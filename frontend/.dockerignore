@@ -1,0 +1,7 @@
+# Ignore git
+.git/
+.gitignore
+
+# Ignore Dockerfile (already in image)
+Dockerfile
+.dockerignore

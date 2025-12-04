@@ -10,3 +10,15 @@ pypdf
 tiktoken
 python-multipart
 google-cloud-storage
+
+# Authentication & Security
+python-jose[cryptography]
+passlib[bcrypt]
+googlemaps
+
+# SaaS-Ready Multi-Tenant Infrastructure
+psycopg2-binary
+redis
+pgvector
+sqlalchemy
+alembic

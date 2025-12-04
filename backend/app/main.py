@@ -5,7 +5,7 @@ All Rights Reserved.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from app.api import chat
+from app.api import chat, dashboard
 import os
 
 load_dotenv()
@@ -29,6 +29,13 @@ app.add_middleware(
 )
 
 app.include_router(chat.router, prefix="/api")
+
+# Add dashboard router (feature-flagged)
+ENABLE_DASHBOARD = os.getenv("ENABLE_DASHBOARD", "true").lower() == "true"
+if ENABLE_DASHBOARD:
+    app.include_router(dashboard.router, prefix="/api")
+    print("✓ Dashboard API enabled")
+
 
 @app.get("/")
 async def root():

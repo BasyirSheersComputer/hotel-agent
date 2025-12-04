@@ -8,15 +8,23 @@ from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from .location import search_nearby_places, format_nearby_results, get_place_type
-from .gcs_utils import download_vector_db_from_gcs
+
+# Only import GCS utilities in cloud environment
+try:
+    from .gcs_utils import download_vector_db_from_gcs
+    GCS_AVAILABLE = True
+except ImportError:
+    GCS_AVAILABLE = False
+    print("GCS utilities not available (running in local mode)")
 
 CHROMA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "chroma_db_v2")
 
 # Download vector DB from GCS if in cloud environment
 # (GCS credentials are automatically available in Cloud Run)
-if os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("K_SERVICE"):
+if GCS_AVAILABLE and (os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("K_SERVICE")):
     print("Cloud environment detected. Attempting to download vector DB from GCS...")
     download_vector_db_from_gcs()
+
 
 PROMPT_TEMPLATE = """
 You are a helpful Club Med Cherating resort assistant. Answer the question based only on the following context.
