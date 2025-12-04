@@ -4,11 +4,14 @@ All Rights Reserved.
 
 Dashboard API Endpoints
 Provides metrics and analytics data for the performance dashboard.
+Requires authentication in SaaS mode.
 """
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from app.services.metrics_service import get_metrics_service
+from app.middleware.auth import get_current_user, CurrentUser
+from app.config.settings import DEMO_MODE
 
 router = APIRouter()
 

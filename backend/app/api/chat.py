@@ -1,7 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
+from typing import Optional
 from app.services.retrieval import query_rag
 from app.services.metrics_service import get_metrics_service
+from app.middleware.auth import get_current_user_optional, CurrentUser
+from app.config.settings import DEMO_MODE
 import time
 import os
 import re
@@ -50,8 +53,16 @@ def estimate_tokens_from_text(text: str) -> int:
     return len(text) // 4
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat_endpoint(request: ChatRequest):
+async def chat_endpoint(
+    request: ChatRequest,
+    http_request: Request,
+    current_user: Optional[CurrentUser] = Depends(get_current_user_optional)
+):
     start_time = time.time()
+    
+    # Get tenant context (falls back to demo org in demo mode)
+    org_id = getattr(http_request.state, 'org_id', None)
+    user_id = current_user.user_id if current_user else None
     
     try:
         result = query_rag(request.query)

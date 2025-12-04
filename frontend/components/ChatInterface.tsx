@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 
+// API URL from environment - defaults to cloud backend
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://hotel-agent-backend-319072304914.us-central1.run.app";
+
 interface Message {
     role: "user" | "agent";
     content: string;
@@ -35,8 +38,8 @@ export default function ChatInterface() {
         setIsLoading(true);
 
         try {
-            // Use the cloud backend URL for the demo
-            const response = await fetch("https://hotel-agent-backend-319072304914.us-central1.run.app/api/chat", {
+            // Use configured API URL
+            const response = await fetch(`${API_URL}/api/chat`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ query: userMessage.content }),
