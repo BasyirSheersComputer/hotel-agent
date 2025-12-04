@@ -2,10 +2,10 @@
 Test if OpenAI API key works
 """
 import os
-from dotenv import load_dotenv
+from app.env_utils import load_env_robustly
 from openai import OpenAI
 
-load_dotenv()
+load_env_robustly()
 
 print("=" * 60)
 print("TESTING OPENAI API KEY")
@@ -16,7 +16,7 @@ if not api_key:
     print("\nERROR: No API key found!")
     exit(1)
 
-print(f"\nKey loaded: {api_key[:10]}...{api_key[-5:]}")
+print(f"\nKey loaded: {repr(api_key)}")
 print(f"Length: {len(api_key)}")
 
 print("\nTesting API connection...")

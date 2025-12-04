@@ -7,7 +7,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
 import uuid
-from app.database import Base
+from app.database import Base, DATABASE_URL
 
 # Use PostgreSQL UUID if available, otherwise string for SQLite
 try:
@@ -21,6 +21,7 @@ class Organization(Base):
     Each hotel/resort is an organization.
     """
     __tablename__ = "organizations"
+    __table_args__ = {'extend_existing': True}
     
     org_id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
     name = Column(String(255), nullable=False)
@@ -29,7 +30,7 @@ class Organization(Base):
     max_users = Column(Integer, default=10)
     max_kb_docs = Column(Integer, default=100)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    settings = Column(JSONB if "postgresql" in Base.metadata.bind.url.drivername else Text, default={})
+    settings = Column(JSONB if "postgresql" in DATABASE_URL else Text, default={})
     
     # Relationships
     users = relationship("User", back_populates="organization", cascade="all, delete-orphan")
@@ -58,7 +59,7 @@ class User(Base):
     
     __table_args__ = (
         # Unique email per organization
-        {"schema": None}  # Will add unique constraint in Alembic migration
+        {"schema": None, "extend_existing": True}  # Will add unique constraint in Alembic migration
     )
 
 class ChatSession(Base):
@@ -66,6 +67,7 @@ class ChatSession(Base):
     Chat session table (tenant-scoped).
     """
     __tablename__ = "chat_sessions"
+    __table_args__ = {'extend_existing': True}
     
     session_id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
     org_id = Column(UUIDType, ForeignKey("organizations.org_id", ondelete="CASCADE"), nullable=False, index=True)
@@ -84,6 +86,7 @@ class ChatMessage(Base):
     Chat message table (tenant-scoped).
     """
     __tablename__ = "chat_messages"
+    __table_args__ = {'extend_existing': True}
     
     message_id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
     session_id = Column(UUIDType, ForeignKey("chat_sessions.session_id", ondelete="CASCADE"), nullable=False, index=True)
@@ -100,6 +103,7 @@ class KBDocument(Base):
     Knowledge Base document table (tenant-scoped).
     """
     __tablename__ = "kb_documents"
+    __table_args__ = {'extend_existing': True}
     
     doc_id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
     org_id = Column(UUIDType, ForeignKey("organizations.org_id", ondelete="CASCADE"), nullable=False, index=True)
@@ -119,6 +123,7 @@ class Query(Base):
     Enhanced version of previous metrics table.
     """
     __tablename__ = "queries"
+    __table_args__ = {'extend_existing': True}
     
     id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
     org_id = Column(UUIDType, ForeignKey("organizations.org_id", ondelete="CASCADE"), nullable=False, index=True)
@@ -142,6 +147,7 @@ class KBEmbedding(Base):
     Embeddings table for pgvector (tenant-scoped).
     """
     __tablename__ = "kb_embeddings"
+    __table_args__ = {'extend_existing': True}
     
     embedding_id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
     org_id = Column(UUIDType, ForeignKey("organizations.org_id", ondelete="CASCADE"), nullable=False, index=True)
@@ -149,4 +155,4 @@ class KBEmbedding(Base):
     content = Column(Text, nullable=False)
     # embedding column will be added via Alembic migration with pgvector type
     # embedding = Column(Vector(1536))  # For OpenAI text-embedding-3-small
-    metadata = Column(JSONB if "postgresql" in Base.metadata.bind.url.drivername else Text)
+    meta_data = Column(JSONB if "postgresql" in DATABASE_URL else Text)

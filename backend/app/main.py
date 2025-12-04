@@ -4,11 +4,12 @@ All Rights Reserved.
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
-from app.api import chat, dashboard
 import os
+from app.env_utils import load_env_robustly
 
-load_dotenv()
+load_env_robustly()
+
+from app.api import chat, dashboard
 
 # Validate environment variables
 if not os.getenv("OPENAI_API_KEY"):

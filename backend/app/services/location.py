@@ -10,9 +10,9 @@ import os
 import math
 import requests
 from typing import List, Dict, Optional
-from dotenv import load_dotenv
+from app.env_utils import load_env_robustly
 
-load_dotenv()
+load_env_robustly()
 
 # Club Med Cherating coordinates
 HOTEL_LAT = 4.1383924

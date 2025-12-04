@@ -7,8 +7,8 @@
 set -e  # Exit on error
 
 PROJECT_ID="club-med-agent"
-REGION="asia-southeast1"
-GOOGLE_MAPS_API_KEY="AIzaSyC01CgQ_2qVB_jLFmM2HMrdY5Z8vq4aHWM"
+REGION="us-central1"
+# GOOGLE_MAPS_API_KEY should be set in environment
 
 # Colors for output
 GREEN='\033[0;32m'

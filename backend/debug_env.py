@@ -2,11 +2,7 @@
 Debug script to check if .env is being loaded correctly
 """
 import os
-from dotenv import load_dotenv
-
-print("=" * 60)
-print("ENVIRONMENT VARIABLE DEBUG")
-print("=" * 60)
+from app.env_utils import load_env_robustly
 
 # Check if .env file exists
 env_path = os.path.join(os.path.dirname(__file__), ".env")
@@ -14,7 +10,7 @@ print(f"\n1. .env file exists: {os.path.exists(env_path)}")
 print(f"   Path: {env_path}")
 
 # Load dotenv
-load_dotenv()
+load_env_robustly()
 
 # Check if keys are loaded
 openai_key = os.getenv("OPENAI_API_KEY")
