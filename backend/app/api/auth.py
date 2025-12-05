@@ -240,6 +240,114 @@ async def register(
     )
 
 
+@router.post("/create-org", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+async def create_organization(
+    request: CreateOrgRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new organization and register the first admin user.
+    
+    In DEMO_MODE: Returns demo token without creating org.
+    In SAAS_MODE: Creates org and admin user in database.
+    """
+    if DEMO_MODE:
+        # Demo mode - pretend to create org
+        token = AuthService.create_access_token(
+            data={
+                "sub": DEMO_USER_ID,
+                "org_id": DEMO_ORG_ID,
+                "email": request.email,
+                "role": "admin"
+            }
+        )
+        return TokenResponse(
+            access_token=token,
+            user={
+                "user_id": DEMO_USER_ID,
+                "email": request.email,
+                "name": request.name,
+                "role": "admin",
+                "org_id": DEMO_ORG_ID,
+                "org_slug": "demo-hotel",
+                "is_demo": True
+            }
+        )
+    
+    # SaaS mode - create organization and admin user
+    import re
+    
+    # Generate slug from org name
+    slug = re.sub(r'[^a-z0-9]+', '-', request.org_name.lower()).strip('-')
+    
+    # Check if slug already exists
+    existing_org = db.query(Organization).filter(Organization.slug == slug).first()
+    if existing_org:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Organization '{slug}' already exists. Try a different name."
+        )
+    
+    # Check if email already exists in any org
+    existing_user = db.query(User).filter(User.email == request.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered. Please login or use a different email."
+        )
+    
+    # Create organization
+    org = Organization(
+        org_id=uuid.uuid4(),
+        name=request.org_name,
+        slug=slug,
+        plan="free",  # Default to free plan
+        max_users=10,
+        max_kb_docs=100
+    )
+    db.add(org)
+    db.flush()  # Get org_id without committing
+    
+    # Create admin user
+    user = User(
+        user_id=uuid.uuid4(),
+        org_id=org.org_id,
+        email=request.email,
+        password_hash=AuthService.hash_password(request.password),
+        name=request.name,
+        role="admin"  # First user is always admin
+    )
+    db.add(user)
+    
+    # Commit both together
+    db.commit()
+    db.refresh(user)
+    db.refresh(org)
+    
+    # Create token
+    token = AuthService.create_access_token(
+        data={
+            "sub": str(user.user_id),
+            "org_id": str(user.org_id),
+            "email": user.email,
+            "role": user.role
+        }
+    )
+    
+    return TokenResponse(
+        access_token=token,
+        user={
+            "user_id": str(user.user_id),
+            "email": user.email,
+            "name": user.name,
+            "role": user.role,
+            "org_id": str(user.org_id),
+            "org_slug": org.slug,
+            "is_demo": False
+        }
+    )
+
+
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
     current_user: CurrentUser = Depends(get_current_user)
