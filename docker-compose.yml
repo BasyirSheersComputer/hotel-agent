@@ -1,22 +1,88 @@
 version: '3.8'
 
 services:
+  # Infrastructure Services
+  postgres:
+    image: postgres:15-alpine
+    container_name: resort_genius_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-resort_genius}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password_123}
+      POSTGRES_DB: ${POSTGRES_DB:-resort_genius}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-resort_genius}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - hotel-agent-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: resort_genius_redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-dev_redis_123}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-dev_redis_123}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - hotel-agent-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: resort_genius_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@resortgenius.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - tools
+    restart: unless-stopped
+    networks:
+      - hotel-agent-network
+
+  # Application Services
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: resort_genius_backend
     ports:
       - "8000:8000"
     environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-resort_genius}:${POSTGRES_PASSWORD:-dev_password_123}@postgres:5432/${POSTGRES_DB:-resort_genius}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-dev_redis_123}@redis:6379/0
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
       - PORT=8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
     networks:
       - hotel-agent-network
 
@@ -24,13 +90,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    container_name: resort_genius_frontend
     ports:
       - "8080:80"
     depends_on:
       - backend
     environment:
-      # Frontend will use http://backend:8000 for API calls in Docker network
-      - BACKEND_URL=http://localhost:8000
+      - BACKEND_URL=http://backend:8000
     healthcheck:
       test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/" ]
       interval: 30s
@@ -38,6 +104,14 @@ services:
       retries: 3
     networks:
       - hotel-agent-network
+
+volumes:
+  postgres_data:
+    name: resort_genius_postgres
+  redis_data:
+    name: resort_genius_redis
+  pgadmin_data:
+    name: resort_genius_pgadmin
 
 networks:
   hotel-agent-network:

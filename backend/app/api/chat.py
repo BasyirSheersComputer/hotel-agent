@@ -3,21 +3,28 @@ from pydantic import BaseModel
 from typing import Optional
 from app.services.retrieval import query_rag
 from app.services.metrics_service import get_metrics_service
-from app.middleware.auth import get_current_user_optional, CurrentUser
+from app.services.translation_service import (
+    detect_language, translate_to_english, translate_response,
+    get_supported_languages, SUPPORTED_LANGUAGES
+)
+from app.middleware.auth import get_current_user_optional, CurrentUser, require_agent_or_admin
 from app.config.settings import DEMO_MODE
 import time
 import os
 import re
 
-router = APIRouter()
+# Chat requires agent or admin role (demo mode gets admin by default)
+router = APIRouter(dependencies=[Depends(require_agent_or_admin())])
 
 class ChatRequest(BaseModel):
     query: str
     agent_id: str = "default"  # Allow frontend to pass agent ID
+    language: Optional[str] = None  # User's preferred language (auto-detect if None)
 
 class ChatResponse(BaseModel):
     answer: str
     sources: list[str]
+    detected_language: Optional[str] = None  # Language detected in user query
 
 # Feature flag for metrics (default: enabled)
 ENABLE_METRICS = os.getenv("ENABLE_METRICS", "true").lower() == "true"
@@ -65,7 +72,29 @@ async def chat_endpoint(
     user_id = current_user.user_id if current_user else None
     
     try:
-        result = query_rag(request.query)
+        # Detect or use provided language
+        user_language = request.language
+        query_for_rag = request.query
+        detected_lang = None
+        
+        # If language not provided, auto-detect and translate if needed
+        if not user_language:
+            detected_lang = detect_language(request.query)
+            user_language = detected_lang
+        else:
+            detected_lang = user_language
+        
+        # If query is not in English, translate for RAG processing
+        if user_language != "en":
+            query_for_rag, _ = translate_to_english(request.query)
+        
+        # Pass org_id for tenant-scoped knowledge base retrieval
+        result = query_rag(query_for_rag, org_id=org_id)
+        
+        # Translate response back to user's language if not English
+        answer = result["answer"]
+        if user_language and user_language != "en":
+            answer = translate_response(answer, user_language)
         
         # Calculate response time
         response_time_ms = int((time.time() - start_time) * 1000)
@@ -110,8 +139,9 @@ async def chat_endpoint(
                 print(f"Metrics logging error: {metrics_error}")
         
         return ChatResponse(
-            answer=result["answer"],
-            sources=result["sources"]
+            answer=answer,
+            sources=result["sources"],
+            detected_language=detected_lang
         )
     except Exception as e:
         response_time_ms = int((time.time() - start_time) * 1000)
@@ -133,3 +163,18 @@ async def chat_endpoint(
                 print(f"Metrics logging error: {metrics_error}")
         
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/languages")
+async def get_languages():
+    """
+    Get list of supported languages for the UI.
+    """
+    return {
+        "languages": [
+            {"code": code, "name": name}
+            for code, name in SUPPORTED_LANGUAGES.items()
+        ],
+        "default": "en"
+    }
+

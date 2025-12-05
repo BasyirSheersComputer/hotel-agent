@@ -168,10 +168,36 @@ def is_resort_facility(query_text: str) -> bool:
     
     return False
 
-def query_rag(query_text: str):
+def get_collection_name(org_id: str = None) -> str:
+    """
+    Get the Chroma collection name for an organization.
+    
+    Returns:
+        - 'kb_demo' for demo mode or no org_id
+        - 'kb_{org_id}' for normal orgs
+        - 'default' as fallback for backward compatibility
+    """
+    from app.config.settings import DEMO_MODE, DEMO_ORG_ID
+    
+    if DEMO_MODE or org_id is None:
+        return "kb_demo"
+    
+    if org_id == DEMO_ORG_ID:
+        return "kb_demo"
+    
+    # Sanitize org_id for collection name (Chroma has restrictions)
+    safe_org_id = str(org_id).replace("-", "")[:32]
+    return f"kb_{safe_org_id}"
+
+
+def query_rag(query_text: str, org_id: str = None):
     """
     Query the RAG system and return the answer and sources.
     If the query is about nearby locations, use Google Maps API instead.
+    
+    Args:
+        query_text: The user's query
+        org_id: Organization ID for tenant-scoped retrieval (optional)
     """
     # Check if this is a location-based query
     if detect_location_query(query_text):
@@ -202,8 +228,30 @@ def query_rag(query_text: str):
                 "answer": "I apologize, but I cannot access my knowledge base at the moment. The system administrator needs to rebuild the vector database.",
                 "sources": ["System Error: Vector DB missing"]
             }
-            
-        db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
+        
+        # Get org-specific collection name
+        collection_name = get_collection_name(org_id)
+        
+        # Try to load org-specific collection first
+        try:
+            db = Chroma(
+                persist_directory=CHROMA_PATH, 
+                embedding_function=embedding_function,
+                collection_name=collection_name
+            )
+            # Check if collection has documents
+            if db._collection.count() == 0:
+                # Fall back to default collection for backward compatibility
+                db = Chroma(
+                    persist_directory=CHROMA_PATH, 
+                    embedding_function=embedding_function
+                )
+        except:
+            # Fall back to default collection
+            db = Chroma(
+                persist_directory=CHROMA_PATH, 
+                embedding_function=embedding_function
+            )
 
         # Search the DB
         results = db.similarity_search_with_score(query_text, k=3)

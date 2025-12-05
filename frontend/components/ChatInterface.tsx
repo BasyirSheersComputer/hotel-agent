@@ -2,14 +2,19 @@
 
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
+import LanguageSelector from "./LanguageSelector";
 
 // API URL from environment - defaults to cloud backend
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://hotel-agent-backend-319072304914.us-central1.run.app";
+
+// Language storage key
+const LANGUAGE_STORAGE_KEY = "resort_genius_language";
 
 interface Message {
     role: "user" | "agent";
     content: string;
     sources?: string[];
+    detectedLanguage?: string;
 }
 
 
@@ -18,7 +23,22 @@ export default function ChatInterface() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [language, setLanguage] = useState("en");
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Load saved language preference
+    useEffect(() => {
+        const savedLang = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+        if (savedLang) {
+            setLanguage(savedLang);
+        }
+    }, []);
+
+    // Save language preference
+    const handleLanguageChange = (newLang: string) => {
+        setLanguage(newLang);
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, newLang);
+    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -38,11 +58,18 @@ export default function ChatInterface() {
         setIsLoading(true);
 
         try {
-            // Use configured API URL
+            // Use configured API URL with language parameter
+            const token = localStorage.getItem("token");
             const response = await fetch(`${API_URL}/api/chat`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ query: userMessage.content }),
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({
+                    query: userMessage.content,
+                    language: language !== "en" ? language : undefined  // Only send if not English
+                }),
             });
 
             if (!response.ok) throw new Error("Network response was not ok");
@@ -52,6 +79,7 @@ export default function ChatInterface() {
                 role: "agent",
                 content: data.answer,
                 sources: data.sources,
+                detectedLanguage: data.detected_language,
             };
             setMessages((prev) => [...prev, agentMessage]);
         } catch (error) {
@@ -113,9 +141,18 @@ export default function ChatInterface() {
 
             {/* Main Chat Area */}
             <main className="flex-1 flex flex-col bg-white/30">
-                <header className="p-6 md:px-8 border-b border-black/5 bg-white/50">
-                    <h2 className="text-[#0F4C81] text-xl md:text-2xl font-serif font-semibold">Guest Assistance</h2>
-                    <p className="text-gray-500 text-sm md:text-base">Ask me anything about the resort or local area</p>
+                <header className="p-6 md:px-8 border-b border-black/5 bg-white/50 flex justify-between items-center">
+                    <div>
+                        <h2 className="text-[#0F4C81] text-xl md:text-2xl font-serif font-semibold">Guest Assistance</h2>
+                        <p className="text-gray-500 text-sm md:text-base">Ask me anything about the resort or local area</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <LanguageSelector
+                            selectedLanguage={language}
+                            onLanguageChange={handleLanguageChange}
+                            compact={true}
+                        />
+                    </div>
                 </header>
 
                 <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-6 scroll-smooth">

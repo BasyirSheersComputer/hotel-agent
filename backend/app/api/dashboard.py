@@ -4,16 +4,17 @@ All Rights Reserved.
 
 Dashboard API Endpoints
 Provides metrics and analytics data for the performance dashboard.
-Requires authentication in SaaS mode.
+Requires admin role in SaaS mode.
 """
 from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from app.services.metrics_service import get_metrics_service
-from app.middleware.auth import get_current_user, CurrentUser
+from app.middleware.auth import get_current_user, CurrentUser, require_admin
 from app.config.settings import DEMO_MODE
 
-router = APIRouter()
+# All dashboard routes require admin role
+router = APIRouter(dependencies=[Depends(require_admin())])
 
 class MetricsSummary(BaseModel):
     """Summary metrics model"""
