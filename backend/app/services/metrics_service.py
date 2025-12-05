@@ -38,6 +38,7 @@ class MetricsService:
                 question_category TEXT,
                 source_type TEXT,
                 agent_id TEXT,
+                org_id TEXT,
                 success BOOLEAN DEFAULT TRUE,
                 error_message TEXT,
                 tokens_used INTEGER DEFAULT 0,
@@ -90,11 +91,11 @@ class MetricsService:
         cursor = conn.cursor()
         
         try:
-            # Check if new columns exist
+            # Check if tokens_used exists
             cursor.execute("SELECT tokens_used FROM queries LIMIT 1")
         except sqlite3.OperationalError:
-            # Add missing columns
-            print("Migrating database: Adding new metric columns...")
+            # Add missing columns (v1 migration)
+            print("Migrating database: Adding v1 metric columns...")
             try:
                 cursor.execute("ALTER TABLE queries ADD COLUMN tokens_used INTEGER DEFAULT 0")
                 cursor.execute("ALTER TABLE queries ADD COLUMN cost_estimate REAL DEFAULT 0.0")
@@ -102,7 +103,19 @@ class MetricsService:
                 cursor.execute("ALTER TABLE queries ADD COLUMN aht_saved_s INTEGER DEFAULT 0")
                 conn.commit()
             except Exception as e:
-                print(f"Migration warning: {e}")
+                print(f"Migration v1 warning: {e}")
+
+        try:
+            # Check if org_id exists (v2 migration)
+            cursor.execute("SELECT org_id FROM queries LIMIT 1")
+        except sqlite3.OperationalError:
+            # Add org_id column
+            print("Migrating database: Adding org_id column...")
+            try:
+                cursor.execute("ALTER TABLE queries ADD COLUMN org_id TEXT")
+                conn.commit()
+            except Exception as e:
+                print(f"Migration v2 warning: {e}")
         
         conn.close()
     
@@ -113,6 +126,7 @@ class MetricsService:
         question_category: Optional[str] = None,
         source_type: Optional[str] = None,
         agent_id: Optional[str] = "default",
+        org_id: Optional[str] = None,
         success: bool = True,
         error_message: Optional[str] = None,
         tokens_used: int = 0,
@@ -144,10 +158,10 @@ class MetricsService:
         
         cursor.execute("""
             INSERT INTO queries 
-            (query_text, response_time_ms, question_category, source_type, agent_id, success, error_message, 
+            (query_text, response_time_ms, question_category, source_type, agent_id, org_id, success, error_message, 
              tokens_used, cost_estimate, accuracy_score, aht_saved_s)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (query_text, response_time_ms, question_category, source_type, agent_id, success, error_message,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (query_text, response_time_ms, question_category, source_type, agent_id, org_id, success, error_message,
               tokens_used, cost_estimate, accuracy_score, int(aht_saved_s)))
         
         query_id = cursor.lastrowid
@@ -184,17 +198,25 @@ class MetricsService:
         conn.commit()
         conn.close()
     
-    def get_summary_metrics(self, hours: int = 24) -> Dict[str, Any]:
+    def get_summary_metrics(self, hours: int = 24, org_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Get summary metrics for the dashboard
         """
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
-        cutoff_time = datetime.now() - timedelta(hours=hours)
+        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+        
+        # Build query conditions
+        where_clause = "timestamp > ?"
+        params = [cutoff_time]
+        
+        if org_id:
+            where_clause += " AND org_id = ?"
+            params.append(org_id)
         
         # Basic stats
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT 
                 COUNT(*) as total,
                 AVG(response_time_ms) as avg_time,
@@ -203,8 +225,8 @@ class MetricsService:
                 SUM(tokens_used) as total_tokens,
                 SUM(cost_estimate) as total_cost
             FROM queries
-            WHERE timestamp > ?
-        """, (cutoff_time,))
+            WHERE {where_clause}
+        """, params)
         
         row = cursor.fetchone()
         total_queries = row[0] or 0
@@ -215,29 +237,29 @@ class MetricsService:
         total_cost = row[5] or 0.0
         
         # Success rate
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT 
                 COUNT(CASE WHEN success = TRUE THEN 1 END) * 100.0 / COUNT(*) as success_rate
             FROM queries
-            WHERE timestamp > ?
-        """, (cutoff_time,))
+            WHERE {where_clause}
+        """, params)
         success_rate = cursor.fetchone()[0] or 100.0
         
         # Unique agents
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT COUNT(DISTINCT agent_id) FROM queries
-            WHERE timestamp > ?
-        """, (cutoff_time,))
+            WHERE {where_clause}
+        """, params)
         unique_agents = cursor.fetchone()[0]
         
         # RAG vs Maps counts for breakdown
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT 
                 COUNT(CASE WHEN source_type = 'RAG' THEN 1 END) as rag_count,
                 COUNT(CASE WHEN source_type = 'Maps' THEN 1 END) as maps_count
             FROM queries
-            WHERE timestamp > ?
-        """, (cutoff_time,))
+            WHERE {where_clause}
+        """, params)
         source_counts = cursor.fetchone()
         rag_count = source_counts[0] or 0
         maps_count = source_counts[1] or 0
@@ -284,24 +306,31 @@ class MetricsService:
             "cost_breakdown": "GPT-4o: 80%, Maps: 20%"
         }
     
-    def get_question_categories(self, hours: int = 24) -> List[Dict[str, Any]]:
+    def get_question_categories(self, hours: int = 24, org_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get breakdown of questions by category"""
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
-        cutoff_time = datetime.now() - timedelta(hours=hours)
+        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
         
-        cursor.execute("""
+        where_clause = "timestamp > ?"
+        params = [cutoff_time]
+        
+        if org_id:
+            where_clause += " AND org_id = ?"
+            params.append(org_id)
+        
+        cursor.execute(f"""
             SELECT 
                 COALESCE(question_category, 'Uncategorized') as category,
                 COUNT(*) as count,
                 AVG(response_time_ms) as avg_time,
                 AVG(accuracy_score) * 100 as accuracy
             FROM queries
-            WHERE timestamp > ?
+            WHERE {where_clause}
             GROUP BY question_category
             ORDER BY count DESC
-        """, (cutoff_time,))
+        """, params)
         
         results = cursor.fetchall()
         conn.close()
@@ -316,24 +345,31 @@ class MetricsService:
             for row in results
         ]
     
-    def get_hourly_trends(self, hours: int = 24) -> List[Dict[str, Any]]:
+    def get_hourly_trends(self, hours: int = 24, org_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get hourly query trends"""
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
-        cutoff_time = datetime.now() - timedelta(hours=hours)
+        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
         
-        cursor.execute("""
+        where_clause = "timestamp > ?"
+        params = [cutoff_time]
+        
+        if org_id:
+            where_clause += " AND org_id = ?"
+            params.append(org_id)
+        
+        cursor.execute(f"""
             SELECT 
                 strftime('%Y-%m-%d %H:00:00', timestamp) as hour,
                 COUNT(*) as query_count,
                 AVG(response_time_ms) as avg_response_time,
                 COUNT(CASE WHEN success = TRUE THEN 1 END) * 100.0 / COUNT(*) as success_rate
             FROM queries
-            WHERE timestamp > ?
+            WHERE {where_clause}
             GROUP BY hour
             ORDER BY hour ASC
-        """, (cutoff_time,))
+        """, params)
         
         results = cursor.fetchall()
         conn.close()
@@ -348,14 +384,21 @@ class MetricsService:
             for row in results
         ]
     
-    def get_agent_performance(self, hours: int = 24) -> List[Dict[str, Any]]:
+    def get_agent_performance(self, hours: int = 24, org_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get performance metrics per agent"""
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
-        cutoff_time = datetime.now() - timedelta(hours=hours)
+        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
         
-        cursor.execute("""
+        where_clause = "timestamp > ?"
+        params = [cutoff_time]
+        
+        if org_id:
+            where_clause += " AND org_id = ?"
+            params.append(org_id)
+        
+        cursor.execute(f"""
             SELECT 
                 agent_id,
                 COUNT(*) as query_count,
@@ -363,10 +406,10 @@ class MetricsService:
                 AVG(accuracy_score) * 100 as accuracy,
                 MAX(timestamp) as last_active
             FROM queries
-            WHERE timestamp > ?
+            WHERE {where_clause}
             GROUP BY agent_id
             ORDER BY query_count DESC
-        """, (cutoff_time,))
+        """, params)
         
         results = cursor.fetchall()
         conn.close()
@@ -382,25 +425,41 @@ class MetricsService:
             for row in results
         ]
     
-    def get_source_distribution(self, hours: int = 24) -> List[Dict[str, Any]]:
+    def get_source_distribution(self, hours: int = 24, org_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get distribution of query sources (RAG vs Maps vs Other)"""
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
-        cutoff_time = datetime.now() - timedelta(hours=hours)
+        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
         
-        cursor.execute("""
+        where_clause = "timestamp > ?"
+        params = [cutoff_time]
+        
+        if org_id:
+            where_clause += " AND org_id = ?"
+            params.append(org_id)
+        
+        # Calculate total for percentage
+        cursor.execute(f"SELECT COUNT(*) FROM queries WHERE {where_clause}", params)
+        total_count = cursor.fetchone()[0]
+        
+        cursor.execute(f"""
             SELECT 
                 COALESCE(source_type, 'Unknown') as source,
-                COUNT(*) as count,
-                COUNT(*) * 100.0 / (SELECT COUNT(*) FROM queries WHERE timestamp > ?) as percentage
+                COUNT(*) as count
             FROM queries
-            WHERE timestamp > ?
+            WHERE {where_clause}
             GROUP BY source_type
             ORDER BY count DESC
-        """, (cutoff_time, cutoff_time))
+        """, params)
         
-        results = cursor.fetchall()
+        results = []
+        for row in cursor.fetchall():
+            source = row[0]
+            count = row[1]
+            percentage = (count / total_count * 100.0) if total_count > 0 else 0
+            results.append((source, count, percentage))
+            
         conn.close()
         
         return [

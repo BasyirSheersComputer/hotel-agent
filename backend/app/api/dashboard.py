@@ -70,70 +70,80 @@ class SourceMetric(BaseModel):
 
 @router.get("/metrics/summary", response_model=MetricsSummary)
 async def get_metrics_summary(
+    request: Request,
     hours: int = Query(default=24, ge=1, le=168, description="Hours to look back (1-168)")
 ):
     """
     Get summary metrics for the dashboard
     """
     try:
+        org_id = getattr(request.state, "org_id", None)
         service = get_metrics_service()
-        data = service.get_summary_metrics(hours=hours)
+        data = service.get_summary_metrics(hours=hours, org_id=org_id)
         return MetricsSummary(**data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch metrics summary: {str(e)}")
 
 @router.get("/metrics/categories", response_model=List[CategoryMetric])
 async def get_question_categories(
+    request: Request,
     hours: int = Query(default=24, ge=1, le=168)
 ):
     """
     Get breakdown of questions by category
     """
     try:
+        org_id = getattr(request.state, "org_id", None)
         service = get_metrics_service()
-        data = service.get_question_categories(hours=hours)
+        data = service.get_question_categories(hours=hours, org_id=org_id)
         return [CategoryMetric(**item) for item in data]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch categories: {str(e)}")
 
 @router.get("/metrics/trends", response_model=List[HourlyTrend])
 async def get_hourly_trends(
+    request: Request,
     hours: int = Query(default=24, ge=1, le=168)
 ):
     """
     Get hourly query trends
     """
     try:
+        org_id = getattr(request.state, "org_id", None)
         service = get_metrics_service()
-        data = service.get_hourly_trends(hours=hours)
+        data = service.get_hourly_trends(hours=hours, org_id=org_id)
         return [HourlyTrend(**item) for item in data]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch trends: {str(e)}")
 
 @router.get("/metrics/agents", response_model=List[AgentMetric])
 async def get_agent_performance(
+    request: Request,
     hours: int = Query(default=24, ge=1, le=168)
 ):
     """
     Get performance metrics per agent
     """
     try:
+        org_id = getattr(request.state, "org_id", None)
         service = get_metrics_service()
-        data = service.get_agent_performance(hours=hours)
+        data = service.get_agent_performance(hours=hours, org_id=org_id)
         return [AgentMetric(**item) for item in data]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch agent metrics: {str(e)}")
 
 @router.get("/metrics/sources", response_model=List[SourceMetric])
 async def get_source_distribution(
+    request: Request,
     hours: int = Query(default=24, ge=1, le=168)
 ):
     """
     Get distribution of query sources (RAG, Maps, etc.)
     """
     try:
+        org_id = getattr(request.state, "org_id", None)
         service = get_metrics_service()
-        data = service.get_source_distribution(hours=hours)
+        data = service.get_source_distribution(hours=hours, org_id=org_id)
         return [SourceMetric(**item) for item in data]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch source distribution: {str(e)}")

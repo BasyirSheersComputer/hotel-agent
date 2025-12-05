@@ -100,6 +100,7 @@ async def chat_endpoint(
                     question_category=question_category,
                     source_type=source_type,
                     agent_id=request.agent_id,
+                    org_id=org_id,
                     success=True,
                     tokens_used=total_tokens,
                     cost_estimate=cost_estimate
@@ -124,6 +125,7 @@ async def chat_endpoint(
                     response_time_ms=response_time_ms,
                     question_category=detect_question_category(request.query),
                     agent_id=request.agent_id,
+                    org_id=org_id,
                     success=False,
                     error_message=str(e)
                 )
