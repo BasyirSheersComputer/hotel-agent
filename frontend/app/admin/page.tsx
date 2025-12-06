@@ -23,11 +23,11 @@ export default function AdminPage() {
             // Check if user is admin
             if (!user) {
                 router.push("/login");
-            } else if (user.role !== "admin") {
+            } else if (user.role !== "admin" && !accessDenied) {
                 setAccessDenied(true);
             }
         }
-    }, [user, isLoading, router]);
+    }, [user, isLoading, router, accessDenied]);
 
     if (isLoading) {
         return (

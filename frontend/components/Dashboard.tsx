@@ -306,7 +306,22 @@ export default function Dashboard() {
 
 // Sub-components
 
-function KPICard({ label, value, icon, badge, subValues }: any) {
+interface KPICardProps {
+    label: string;
+    value: string | number;
+    icon: string;
+    badge?: {
+        text: string;
+        color: "warning" | "success" | "neutral";
+    };
+    subValues?: {
+        label: string;
+        value: string | number;
+        color?: string;
+    }[];
+}
+
+function KPICard({ label, value, icon, badge, subValues }: KPICardProps) {
     return (
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
@@ -323,7 +338,7 @@ function KPICard({ label, value, icon, badge, subValues }: any) {
                 <div className="text-2xl font-bold text-slate-900">{value}</div>
                 {subValues && (
                     <div className="flex gap-3 mt-2 text-xs">
-                        {subValues.map((sv: any, i: number) => (
+                        {subValues.map((sv, i) => (
                             <div key={i} className="flex items-center gap-1">
                                 <span className="text-slate-400">{sv.label}:</span>
                                 <span className={`font-medium ${sv.color || 'text-slate-700'}`}>{sv.value}</span>
@@ -336,7 +351,14 @@ function KPICard({ label, value, icon, badge, subValues }: any) {
     );
 }
 
-function SourceBar({ label, count, percentage, color }: any) {
+interface SourceBarProps {
+    label: string;
+    count: number;
+    percentage: number;
+    color: string;
+}
+
+function SourceBar({ label, count, percentage, color }: SourceBarProps) {
     return (
         <div>
             <div className="flex justify-between text-sm mb-1">

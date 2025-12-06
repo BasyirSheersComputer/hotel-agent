@@ -101,14 +101,14 @@ def migrate():
                  # Check if default exists or if table is empty
                  if target_session.query(Organization).count() == 0:
                      logger.info("Injecting Default Organization (Fixing Orphans)...")
-                     def_org = Organization(org_id=default_id, name="Demo Resort", slug="demo-resort", plan="enterprise")
+                     def_org = Organization(org_id=default_id, name="Demo Resort", slug="demo-hotel", plan="enterprise")
                      target_session.add(def_org)
                      target_session.commit()
             
             if table_name == "users":
                  if target_session.query(User).count() == 0:
                      logger.info("Injecting Default User (Fixing Orphans)...")
-                     def_user = User(user_id=default_id, org_id=default_id, email="demo@resortgenius.com", password_hash="hashed_secret", name="Demo Admin", role="admin")
+                     def_user = User(user_id=default_id, org_id=default_id, email="demo@resort-genius.com", password_hash="$pbkdf2-sha256$29000$5NybU2otpTQGoNS6t5YSgg$r83pJzmkkZ4MSucoqy1ePwzQfi5ZxWPdWUnIIiHAggog", name="Demo Admin", role="admin")
                      target_session.add(def_user)
                      target_session.commit()
             

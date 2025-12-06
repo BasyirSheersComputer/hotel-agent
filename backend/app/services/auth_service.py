@@ -10,14 +10,15 @@ from passlib.context import CryptContext
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.models import User, Organization
+from app.config.settings import JWT_SECRET_KEY, JWT_ALGORITHM
 import uuid
 
-# Security configuration
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-this-in-production")
-ALGORITHM = "HS256"
+# Security configuration (gets from settings.py for consistency)
+SECRET_KEY = JWT_SECRET_KEY
+ALGORITHM = JWT_ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 hours
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 class AuthService:
     """
@@ -46,6 +47,7 @@ class AuthService:
         else:
             expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         
+        print(f"AuthService: Encoding Token... Expire: {expire}")
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
@@ -72,23 +74,30 @@ class AuthService:
         Authenticate a user by email, password, and organization slug.
         Returns User object if successful, None if failed.
         """
+        print(f"AuthService: Finding Org {org_slug}")
         # Find organization by slug
         org = db.query(Organization).filter(Organization.slug == org_slug).first()
+        print(f"AuthService: Org Found: {org}")
         if not org:
             return None
         
         # Find user in that organization
+        print(f"AuthService: Looking for user {email} in org {org.org_id}")
         user = db.query(User).filter(
             User.email == email,
             User.org_id == org.org_id
         ).first()
+        print(f"AuthService: User found: {user}")
         
         if not user:
             return None
         
         # Verify password
+        print("AuthService: Verifying Password...")
         if not AuthService.verify_password(password, user.password_hash):
+            print("AuthService: Password Mismatch")
             return None
+        print("AuthService: Password Verified")
         
         # Update last login
         user.last_login = datetime.utcnow()

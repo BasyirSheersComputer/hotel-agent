@@ -13,6 +13,7 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL", 
     "sqlite:///./resort_genius.db"  # Local fallback
 )
+print(f"DATABASE_URL: {DATABASE_URL[:50]}...")  # Debug: show first 50 chars
 
 # Use NullPool for serverless environments like Cloud Run
 connect_args = {}
@@ -53,10 +54,13 @@ def get_db():
     """
     Dependency for FastAPI routes to get database session.
     """
+    print("get_db: Creating Session...")
     db = SessionLocal()
+    print("get_db: Session Created. Yielding...")
     try:
         yield db
     finally:
+        print("get_db: Closing Session.")
         db.close()
 
 def set_tenant_context(connection, org_id: str):

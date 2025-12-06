@@ -141,11 +141,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 isDemo: data.user.is_demo,
                 error: null,
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : "Login failed";
             setState(prev => ({
                 ...prev,
                 isLoading: false,
-                error: error.message || "Login failed",
+                error: errorMessage,
             }));
             throw error;
         }
@@ -176,11 +177,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 isDemo: data.user.is_demo,
                 error: null,
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : "Registration failed";
             setState(prev => ({
                 ...prev,
                 isLoading: false,
-                error: error.message || "Registration failed",
+                error: errorMessage,
             }));
             throw error;
         }

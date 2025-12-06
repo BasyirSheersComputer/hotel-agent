@@ -101,6 +101,7 @@ async def login(
             }
         )
     
+    print(f"Login Request: {request.email}, {request.org_slug}")
     # SaaS mode - validate credentials
     user = AuthService.authenticate_user(
         db, 
@@ -108,6 +109,7 @@ async def login(
         request.password, 
         request.org_slug
     )
+    print(f"Auth Result: {user}")
     
     if not user:
         raise HTTPException(

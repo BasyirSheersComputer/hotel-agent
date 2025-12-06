@@ -95,10 +95,10 @@ export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
 
             if (response.ok) {
                 const data = await response.json();
-                const loadedMessages: Message[] = data.map((msg: any) => ({
-                    role: msg.role === "assistant" ? "agent" : msg.role, // Map 'assistant' to 'agent'
+                const loadedMessages: Message[] = data.map((msg: { role: string; content: string }) => ({
+                    role: msg.role === "assistant" ? "agent" : msg.role as "user" | "agent",
                     content: msg.content
-                })).reverse(); // API returns newest first? Check backend. Backend order_by desc. So reverse needed.
+                })).reverse();
 
                 setMessages(loadedMessages);
                 setCurrentSessionId(sessionId);
@@ -339,10 +339,10 @@ export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
                                     <div className="prose prose-sm max-w-none">
                                         <ReactMarkdown
                                             components={{
-                                                strong: ({ node, ...props }) => <strong className="font-semibold text-inherit" {...props} />,
-                                                ul: ({ node, ...props }) => <ul className="ml-5 my-2 list-disc" {...props} />,
-                                                li: ({ node, ...props }) => <li className="mb-1" {...props} />,
-                                                p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                                                strong: (props) => <strong className="font-semibold text-inherit" {...props} />,
+                                                ul: (props) => <ul className="ml-5 my-2 list-disc" {...props} />,
+                                                li: (props) => <li className="mb-1" {...props} />,
+                                                p: (props) => <p className="mb-2 last:mb-0" {...props} />,
                                             }}
                                         >
                                             {msg.content}
@@ -426,7 +426,16 @@ export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
     );
 }
 
-function HistoryDrawer({ isOpen, onClose, sessions, currentSessionId, onLoadSession, onCreateSession }: any) {
+interface HistoryDrawerProps {
+    isOpen: boolean;
+    onClose: () => void;
+    sessions: ChatSession[];
+    currentSessionId: string | null;
+    onLoadSession: (id: string) => void;
+    onCreateSession: () => void;
+}
+
+function HistoryDrawer({ isOpen, onClose, sessions, currentSessionId, onLoadSession, onCreateSession }: HistoryDrawerProps) {
     if (!isOpen) return null;
 
     return (
@@ -456,7 +465,7 @@ function HistoryDrawer({ isOpen, onClose, sessions, currentSessionId, onLoadSess
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-2">Recent Sessions</h3>
-                    {sessions.map((session: any) => (
+                    {sessions.map((session) => (
                         <button
                             key={session.session_id}
                             onClick={() => onLoadSession(session.session_id)}

@@ -55,7 +55,10 @@ def load_env_robustly():
                     line = line.strip()
                     if line and not line.startswith('#') and '=' in line:
                         key, value = line.split('=', 1)
-                        os.environ[key.strip()] = value.strip().strip('"').strip("'")
+                        key = key.strip()
+                        # Only set if not already in environment (preserve shell env vars)
+                        if key not in os.environ:
+                            os.environ[key] = value.strip().strip('"').strip("'")
                 
                 print(f"Loaded .env from {path}")
             except Exception as e:
@@ -66,7 +69,11 @@ def load_env_robustly():
     load_dotenv(override=True)
     
     # Load GCP secrets LAST to ensure they override local .env
-    load_gcp_secrets()
+    # Skip for local development if LOCAL_DEV is set
+    if os.getenv("LOCAL_DEV", "").lower() != "true":
+        load_gcp_secrets()
+    else:
+        print("LOCAL_DEV mode: Skipping GCP secrets loading")
 
 def get_direct_env_value(key_name: str) -> str | None:
     """

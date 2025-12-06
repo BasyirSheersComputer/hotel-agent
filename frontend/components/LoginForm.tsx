@@ -30,10 +30,11 @@ export default function LoginForm() {
             if (isLogin) {
                 await login(email, password, orgSlug);
             } else {
-                await register(orgName, regOrgSlug, adminEmail, adminPassword, adminName);
+                await register(adminEmail, adminPassword, adminName, regOrgSlug);
             }
-        } catch (err: any) {
-            setError(err.message || 'Authentication failed');
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'Authentication failed';
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
