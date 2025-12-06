@@ -22,3 +22,4 @@ redis
 pgvector
 sqlalchemy
 alembic
+google-cloud-secret-manager

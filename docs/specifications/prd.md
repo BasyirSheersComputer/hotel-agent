@@ -3,8 +3,8 @@
 
 **Version**: 2.0 (Final)  
 **Status**: Production Ready  
-**Date**: [Date]  
-**Product Owner**: [Your Name]
+**Date**: December 6 2025  
+**Product Owner**: Ahmad Basyir Bin Azahari
 
 ---
 

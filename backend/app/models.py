@@ -2,18 +2,50 @@
 Multi-tenant data models for SaaS deployment.
 All tables include org_id for tenant isolation.
 """
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, Text, DECIMAL, UUID
+from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, Text, DECIMAL, UUID, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
 import uuid
-from app.database import Base, DATABASE_URL
+from sqlalchemy.types import TypeDecorator, CHAR
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
-# Use PostgreSQL UUID if available, otherwise string for SQLite
-try:
-    UUIDType = PG_UUID(as_uuid=True)
-except:
-    UUIDType = String(36)
+class GUID(TypeDecorator):
+    """Platform-independent GUID type.
+    Uses PostgreSQL's UUID type for PostgreSQL,
+    CHAR(36) for others (SQLite, etc), storing as stringified UUIDs.
+    """
+    impl = CHAR
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(PG_UUID())
+        else:
+            return dialect.type_descriptor(CHAR(36))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        elif dialect.name == "postgresql":
+            return str(value)
+        else:
+            if not isinstance(value, uuid.UUID):
+                return str(uuid.UUID(str(value)))
+            else:
+                return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        else:
+            if not isinstance(value, uuid.UUID):
+                return uuid.UUID(str(value))
+            else:
+                return value
+
+UUIDType = GUID
+from app.database import Base, DATABASE_URL
 
 class Organization(Base):
     """
@@ -30,7 +62,7 @@ class Organization(Base):
     max_users = Column(Integer, default=10)
     max_kb_docs = Column(Integer, default=100)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    settings = Column(JSONB if "postgresql" in DATABASE_URL else Text, default={})
+    settings = Column(JSON, default={})
     
     # Relationships
     users = relationship("User", back_populates="organization", cascade="all, delete-orphan")

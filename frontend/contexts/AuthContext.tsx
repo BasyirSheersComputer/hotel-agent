@@ -3,7 +3,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 // API URL from environment
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://hotel-agent-backend-319072304914.us-central1.run.app";
+// API URL from environment - smart default for local dev
+const API_URL = process.env.NEXT_PUBLIC_API_URL ||
+    (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+        ? "http://localhost:8000"
+        : "https://hotel-agent-backend-319072304914.us-central1.run.app");
 
 interface User {
     user_id: string;

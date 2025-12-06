@@ -9,9 +9,13 @@ from app.services.translation_service import (
 )
 from app.middleware.auth import get_current_user_optional, CurrentUser, require_agent_or_admin
 from app.config.settings import DEMO_MODE
+from app.services.chat_history_service import ChatHistoryService
+from app.database import get_db
+from sqlalchemy.orm import Session
 import time
 import os
 import re
+import uuid
 
 # Chat requires agent or admin role (demo mode gets admin by default)
 router = APIRouter(dependencies=[Depends(require_agent_or_admin())])
@@ -20,11 +24,13 @@ class ChatRequest(BaseModel):
     query: str
     agent_id: str = "default"  # Allow frontend to pass agent ID
     language: Optional[str] = None  # User's preferred language (auto-detect if None)
+    session_id: Optional[str] = None  # Optional session ID to continue conversation
 
 class ChatResponse(BaseModel):
     answer: str
     sources: list[str]
-    detected_language: Optional[str] = None  # Language detected in user query
+    detected_language: Optional[str] = None
+    session_id: str  # Return session ID so frontend can continue conversation
 
 # Feature flag for metrics (default: enabled)
 ENABLE_METRICS = os.getenv("ENABLE_METRICS", "true").lower() == "true"
@@ -63,7 +69,8 @@ def estimate_tokens_from_text(text: str) -> int:
 async def chat_endpoint(
     request: ChatRequest,
     http_request: Request,
-    current_user: Optional[CurrentUser] = Depends(get_current_user_optional)
+    current_user: Optional[CurrentUser] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
 ):
     start_time = time.time()
     
@@ -138,10 +145,38 @@ async def chat_endpoint(
                 # Don't fail the request if metrics logging fails
                 print(f"Metrics logging error: {metrics_error}")
         
+        # Save to history if user is authenticated
+        session_id = request.session_id
+        if current_user:
+            try:
+                # Create session if needed
+                if not session_id:
+                    # Generate a title from the first query (truncate to 50 chars)
+                    title = request.query[:50] + "..." if len(request.query) > 50 else request.query
+                    session = ChatHistoryService.create_session(db, current_user, title)
+                    session_id = str(session.session_id)
+                
+                # Save user message
+                ChatHistoryService.add_message(
+                    db, session_id, "user", request.query, current_user
+                )
+                
+                # Save assistant message
+                ChatHistoryService.add_message(
+                    db, session_id, "agent", answer, current_user
+                )
+            except Exception as history_error:
+                print(f"History saving error: {history_error}")
+                # Don't fail the request if history saving fails, but log it
+                # If session creation failed, we might return without session_id
+                if not session_id:
+                    session_id = str(uuid.uuid4()) # Fallback to random ID if DB fails
+
         return ChatResponse(
             answer=answer,
             sources=result["sources"],
-            detected_language=detected_lang
+            detected_language=detected_lang,
+            session_id=session_id or str(uuid.uuid4())
         )
     except Exception as e:
         response_time_ms = int((time.time() - start_time) * 1000)

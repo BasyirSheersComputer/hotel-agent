@@ -5,7 +5,11 @@ import ReactMarkdown from "react-markdown";
 import LanguageSelector from "./LanguageSelector";
 
 // API URL from environment - defaults to cloud backend
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://hotel-agent-backend-319072304914.us-central1.run.app";
+// API URL from environment - smart default for local dev
+const API_URL = process.env.NEXT_PUBLIC_API_URL ||
+    (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+        ? "http://localhost:8000"
+        : "https://hotel-agent-backend-319072304914.us-central1.run.app");
 
 // Language storage key
 const LANGUAGE_STORAGE_KEY = "resort_genius_language";
@@ -14,7 +18,14 @@ interface Message {
     role: "user" | "agent";
     content: string;
     sources?: string[];
+
     detectedLanguage?: string;
+}
+
+interface ChatSession {
+    session_id: string;
+    title: string;
+    updated_at: string;
 }
 
 
@@ -34,6 +45,12 @@ export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [language, setLanguage] = useState("en");
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+
+    // History state
+    const [sessions, setSessions] = useState<ChatSession[]>([]);
+    const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+    const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const lastScrollTop = useRef(0);
 
@@ -43,7 +60,59 @@ export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
         if (savedLang) {
             setLanguage(savedLang);
         }
+        fetchSessions();
     }, []);
+
+    const fetchSessions = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+
+            const response = await fetch(`${API_URL}/api/history/sessions`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setSessions(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch history:", error);
+        }
+    };
+
+    const loadSession = async (sessionId: string) => {
+        if (currentSessionId === sessionId) return;
+
+        try {
+            setIsHistoryLoading(true);
+            const token = localStorage.getItem("token");
+            const response = await fetch(`${API_URL}/api/history/session/${sessionId}`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const loadedMessages: Message[] = data.map((msg: any) => ({
+                    role: msg.role === "assistant" ? "agent" : msg.role, // Map 'assistant' to 'agent'
+                    content: msg.content
+                })).reverse(); // API returns newest first? Check backend. Backend order_by desc. So reverse needed.
+
+                setMessages(loadedMessages);
+                setCurrentSessionId(sessionId);
+            }
+        } catch (error) {
+            console.error("Failed to load session:", error);
+        } finally {
+            setIsHistoryLoading(false);
+        }
+    };
+
+    const createNewSession = () => {
+        setMessages([]);
+        setCurrentSessionId(null);
+        setInput("");
+    };
 
     // Save language preference
     const handleLanguageChange = (newLang: string) => {
@@ -79,7 +148,8 @@ export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
                 },
                 body: JSON.stringify({
                     query: userMessage.content,
-                    language: language !== "en" ? language : undefined  // Only send if not English
+                    language: language !== "en" ? language : undefined,  // Only send if not English
+                    session_id: currentSessionId // Send current session ID if exists
                 }),
             });
 
@@ -93,6 +163,12 @@ export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
                 detectedLanguage: data.detected_language,
             };
             setMessages((prev) => [...prev, agentMessage]);
+
+            // Update session ID if new
+            if (data.session_id && data.session_id !== currentSessionId) {
+                setCurrentSessionId(data.session_id);
+                fetchSessions(); // Refresh list to show new session
+            }
         } catch (error) {
             console.error("Error:", error);
             setMessages((prev) => [
@@ -143,6 +219,29 @@ export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
                     </div>
                 </div>
 
+
+
+                <div className="flex-col gap-2 hidden md:flex overflow-y-auto flex-1 min-h-0">
+                    <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-sm uppercase tracking-wider text-gray-500 font-semibold">History</h3>
+                        <button onClick={createNewSession} className="text-xs bg-[#0F4C81] text-white px-2 py-1 rounded hover:bg-[#1A5F9A] transition-colors">
+                            + New Chat
+                        </button>
+                    </div>
+                    <div className="flex flex-col gap-1 overflow-y-auto pr-1 custom-scrollbar">
+                        {sessions.map(session => (
+                            <button
+                                key={session.session_id}
+                                onClick={() => loadSession(session.session_id)}
+                                className={`text-left text-sm p-2 rounded truncate transition-colors ${currentSessionId === session.session_id ? 'bg-[#0F4C81]/10 text-[#0F4C81] font-medium' : 'hover:bg-black/5 text-gray-700'}`}
+                            >
+                                {session.title}
+                            </button>
+                        ))}
+                        {sessions.length === 0 && <p className="text-xs text-gray-400 italic">No recent chats</p>}
+                    </div>
+                </div>
+
                 <nav className="hidden md:block">
                     <h3 className="text-sm uppercase tracking-wider text-gray-500 mb-4 font-semibold">Quick Assist</h3>
                     <div className="flex flex-col gap-2">
@@ -160,10 +259,10 @@ export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
                         </button>
                     </div>
                 </nav>
-            </aside>
+            </aside >
 
             {/* Desktop Sidebar Footer (User Profile) */}
-            <div className="hidden md:flex absolute bottom-0 left-0 w-[320px] p-6 border-t border-black/5 bg-white/50 backdrop-blur-sm items-center justify-between z-10">
+            < div className="hidden md:flex absolute bottom-0 left-0 w-[320px] p-6 border-t border-black/5 bg-white/50 backdrop-blur-sm items-center justify-between z-10" >
                 <div className="flex items-center gap-3 overflow-hidden">
                     <div className="w-8 h-8 rounded-full bg-[#0F4C81] text-white flex items-center justify-center text-xs font-bold shrink-0">
                         {user?.name?.[0] || user?.email?.[0] || "U"}
@@ -184,10 +283,10 @@ export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
                         <line x1="21" y1="12" x2="9" y2="12" />
                     </svg>
                 </button>
-            </div>
+            </div >
 
             {/* Main Chat Area */}
-            <main className="flex-1 flex flex-col bg-white/30">
+            < main className="flex-1 flex flex-col bg-white/30" >
                 <header className={`
                     border-b border-black/5 bg-white/50 flex justify-between items-center
                     transition-all duration-300 ease-in-out overflow-hidden
@@ -324,7 +423,7 @@ export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
                         </button>
                     </div>
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     );
 }

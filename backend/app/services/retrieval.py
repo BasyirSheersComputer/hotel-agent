@@ -8,6 +8,10 @@ from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from .location import search_nearby_places, format_nearby_results, get_place_type
+from app.env_utils import load_env_robustly
+
+# Ensure env is loaded
+load_env_robustly()
 
 # Only import GCS utilities in cloud environment
 try:
@@ -221,7 +225,14 @@ def query_rag(query_text: str, org_id: str = None):
     
     # Fallback to standard RAG for non-location queries or resort facility queries
     try:
-        embedding_function = OpenAIEmbeddings(model="text-embedding-3-small")
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            print("ERROR: OPENAI_API_KEY missing in retrieval.py")
+        
+        embedding_function = OpenAIEmbeddings(
+            model="text-embedding-3-small",
+            api_key=api_key
+        )
         
         if not os.path.exists(CHROMA_PATH):
             return {
@@ -260,7 +271,10 @@ def query_rag(query_text: str, org_id: str = None):
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
         prompt = prompt_template.format(context=context_text, question=query_text)
 
-        model = ChatOpenAI(model="gpt-4o")
+        model = ChatOpenAI(
+            model="gpt-4o",
+            api_key=api_key
+        )
         response_text = model.invoke(prompt)
 
         sources = [doc.metadata.get("source", None) for doc, _score in results]

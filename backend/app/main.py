@@ -21,7 +21,7 @@ from app.config.settings import (
 )
 
 # Import routers
-from app.api import chat, dashboard, admin
+from app.api import chat, dashboard, admin, history
 from app.api.auth import router as auth_router
 
 # Import middleware
@@ -87,6 +87,9 @@ if ENABLE_DASHBOARD:
 
 # Admin endpoints (KB management, requires admin role)
 app.include_router(admin.router)
+
+# History endpoints
+app.include_router(history.router)
 
 # =============================================================================
 # ROOT ENDPOINTS
