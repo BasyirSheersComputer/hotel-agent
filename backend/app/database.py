@@ -6,7 +6,7 @@ import os
 from sqlalchemy import create_engine, event
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import NullPool, QueuePool
 
 # Database URL from environment (fallback to SQLite for local dev)
 DATABASE_URL = os.getenv(
@@ -17,13 +17,24 @@ DATABASE_URL = os.getenv(
 # Use NullPool for serverless environments like Cloud Run
 connect_args = {}
 if "sqlite" in DATABASE_URL:
-    connect_args = {"check_same_thread": False, "timeout": 30} # 30s timeout
+    connect_args = {"check_same_thread": False, "timeout": 60} # 60s timeout
 
-engine = create_engine(
-    DATABASE_URL,
-    poolclass=NullPool if "sqlite" not in DATABASE_URL else None,
-    connect_args=connect_args,
-)
+# Configure Connection Pooling
+# Default to NullPool for serverless scalability, but allow Pooling for performance/VM deployments (Optimized 3 - PG Selected)
+engine_kwargs = {
+    "connect_args": connect_args
+}
+
+if "sqlite" in DATABASE_URL:
+    engine_kwargs["poolclass"] = None
+elif os.getenv("DB_POOL_ENABLED", "false").lower() == "true":
+    engine_kwargs["poolclass"] = QueuePool
+    engine_kwargs["pool_size"] = 40
+    engine_kwargs["max_overflow"] = 60
+else:
+    engine_kwargs["poolclass"] = NullPool
+
+engine = create_engine(DATABASE_URL, **engine_kwargs)
 
 # Enable WAL mode for SQLite
 if "sqlite" in DATABASE_URL:

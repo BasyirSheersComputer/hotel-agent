@@ -47,3 +47,7 @@ backend/data/*.pdf
 .vscode/
 .idea/
 test_results_log.txt
+backend/postgres_data/
+backend/resort_genius.db
+backend/venv/
+backend/.env.bak
