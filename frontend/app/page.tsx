@@ -32,21 +32,8 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen relative">
-      {/* Header / Logout */}
-      <div className="absolute top-4 right-4 z-10 flex items-center gap-4">
-        <div className="text-slate-400 text-sm hidden md:block">
-          {user.name || user.email} ({user.org_slug || "Demo"})
-        </div>
-        <button
-          onClick={logout}
-          className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm transition-colors border border-slate-700"
-        >
-          Sign Out
-        </button>
-      </div>
-
-      <ChatInterface />
+    <main className="min-h-screen relative flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 p-0 md:p-4">
+      <ChatInterface user={user} onLogout={logout} />
     </main>
   );
 }

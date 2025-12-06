@@ -43,17 +43,10 @@
   --font-sans: var(--font-outfit);
   --font-serif: var(--font-playfair);
 
-  --radius-lg: var(--radius-lg);
-  --radius-md: var(--radius-md);
-  --radius-sm: var(--radius-sm);
-
-  --shadow-soft: var(--shadow-soft);
-  --shadow-card: var(--shadow-card);
 }
 
-body {
-  font-family: var(--font-outfit), sans-serif;
-  background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
-  color: var(--text-dark);
-  min-height: 100vh;
+/* Hide Next.js Error Overlay (for demo purposes) */
+nextjs-portal,
+#nextjs-portal {
+  display: none !important;
 }

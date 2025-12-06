@@ -19,12 +19,23 @@ interface Message {
 
 
 
-export default function ChatInterface() {
+interface ChatInterfaceProps {
+    user?: {
+        name?: string | null;
+        email?: string | null;
+        org_slug?: string | null;
+    } | null;
+    onLogout?: () => void;
+}
+
+export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [language, setLanguage] = useState("en");
+    const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const lastScrollTop = useRef(0);
 
     // Load saved language preference
     useEffect(() => {
@@ -97,10 +108,22 @@ export default function ChatInterface() {
         sendMessage(query);
     };
 
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const { scrollTop } = e.currentTarget;
+        // Only toggle on mobile (check width or just rely on CSS classes to disable effect on desktop)
+        // We'll update state regardless, but CSS will control visibility
+        if (scrollTop > lastScrollTop.current && scrollTop > 10) {
+            setIsHeaderVisible(false);
+        } else if (scrollTop < lastScrollTop.current) {
+            setIsHeaderVisible(true);
+        }
+        lastScrollTop.current = scrollTop;
+    };
+
     return (
-        <div className="flex w-[95%] max-w-[1400px] h-[90vh] bg-white/85 backdrop-blur-[20px] rounded-[24px] shadow-[0_8px_30px_rgba(0,0,0,0.05)] border border-white/40 overflow-hidden flex-col md:flex-row">
+        <div className="flex w-full max-w-[1400px] h-[100dvh] md:h-[90vh] bg-white/85 backdrop-blur-[20px] rounded-none md:rounded-[24px] shadow-[0_8px_30px_rgba(0,0,0,0.05)] border-0 md:border border-white/40 overflow-hidden flex-col md:flex-row transition-all duration-300">
             {/* Sidebar */}
-            <aside className="w-full md:w-[320px] bg-white/50 border-b md:border-b-0 md:border-r border-black/5 p-8 flex flex-col gap-8 justify-between md:justify-start">
+            <aside className="w-full md:w-[320px] bg-white/50 border-b md:border-b-0 md:border-r border-black/5 p-4 md:p-8 flex flex-col gap-4 md:gap-8 justify-between md:justify-start">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-[#0F4C81] text-white rounded-full flex items-center justify-center font-serif font-bold text-xl">
                         RG
@@ -139,9 +162,38 @@ export default function ChatInterface() {
                 </nav>
             </aside>
 
+            {/* Desktop Sidebar Footer (User Profile) */}
+            <div className="hidden md:flex absolute bottom-0 left-0 w-[320px] p-6 border-t border-black/5 bg-white/50 backdrop-blur-sm items-center justify-between z-10">
+                <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="w-8 h-8 rounded-full bg-[#0F4C81] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                        {user?.name?.[0] || user?.email?.[0] || "U"}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-semibold text-[#1A202C] truncate">{user?.name || user?.email}</span>
+                        <span className="text-xs text-gray-500 truncate">{user?.org_slug || "Demo Org"}</span>
+                    </div>
+                </div>
+                <button
+                    onClick={onLogout}
+                    className="p-2 text-gray-500 hover:text-[#0F4C81] hover:bg-black/5 rounded-lg transition-colors"
+                    title="Sign Out"
+                >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                </button>
+            </div>
+
             {/* Main Chat Area */}
             <main className="flex-1 flex flex-col bg-white/30">
-                <header className="p-6 md:px-8 border-b border-black/5 bg-white/50 flex justify-between items-center">
+                <header className={`
+                    border-b border-black/5 bg-white/50 flex justify-between items-center
+                    transition-all duration-300 ease-in-out overflow-hidden
+                    ${isHeaderVisible ? 'max-h-24 p-4 opacity-100' : 'max-h-0 p-0 border-0 opacity-0'}
+                    md:max-h-none md:p-6 md:px-8 md:opacity-100 md:border-b
+                `}>
                     <div>
                         <h2 className="text-[#0F4C81] text-xl md:text-2xl font-serif font-semibold">Guest Assistance</h2>
                         <p className="text-gray-500 text-sm md:text-base">Ask me anything about the resort or local area</p>
@@ -152,10 +204,24 @@ export default function ChatInterface() {
                             onLanguageChange={handleLanguageChange}
                             compact={true}
                         />
+                        {/* Mobile Logout */}
+                        <button
+                            onClick={onLogout}
+                            className="md:hidden p-2 text-gray-500 hover:text-[#0F4C81] hover:bg-black/5 rounded-lg transition-colors"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                <polyline points="16 17 21 12 16 7" />
+                                <line x1="21" y1="12" x2="9" y2="12" />
+                            </svg>
+                        </button>
                     </div>
                 </header>
 
-                <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-6 scroll-smooth">
+                <div
+                    className="flex-1 overflow-y-auto min-h-0 p-4 md:p-8 flex flex-col gap-4 md:gap-6 scroll-smooth"
+                    onScroll={handleScroll}
+                >
                     {messages.length === 0 && (
                         <div className="flex gap-4 max-w-[80%] animate-[fadeIn_0.3s_ease-out]">
                             <div className="w-10 h-10 rounded-full shadow-[0_4px_6px_rgba(0,0,0,0.05)] overflow-hidden flex-shrink-0">
@@ -235,7 +301,7 @@ export default function ChatInterface() {
                     <div ref={messagesEndRef} />
                 </div>
 
-                <div className="p-8 bg-white border-t border-black/5">
+                <div className="p-4 md:p-8 bg-white border-t border-black/5">
                     <div className="flex gap-4 bg-[#F0F4F8] p-2 rounded-[24px] border border-black/5 focus-within:bg-white focus-within:border-[#1A5F9A] focus-within:shadow-[0_0_0_3px_rgba(15,76,129,0.1)] transition-all">
                         <input
                             type="text"
