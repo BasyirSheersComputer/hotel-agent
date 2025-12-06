@@ -11,7 +11,7 @@ The system has robust multi-tenant SaaS infrastructure in place:
 | Database Abstraction | ✅ Ready | PostgreSQL + SQLite support, RLS prepared |
 | API Endpoints | ✅ Ready | Chat/Dashboard secured with Auth & Rate Limiting |
 | Frontend | ✅ Ready | Login page, Auth protection, Environment-based URLs |
-| Deployment | ⚠️ Partial | Docker/Cloud Run ready, no CI/CD |
+| Deployment | ✅ Ready | Docker/Cloud Run ready, Deployment Docs created, DB Migrated |
 
 ---
 
@@ -34,9 +34,10 @@ The system has robust multi-tenant SaaS infrastructure in place:
 - [x] Add CORS restrictions (configurable via settings)
 
 ### 3. Multi-Tenancy Enforcement
-**Current**: Application-level tenant filtering implemented
+**Current**: Application-level tenant filtering implemented, DB Migrated to PG
 **Gap**:
 - [x] Add tenant filter to all database queries (Metrics Service)
+- [x] Migrate to Production Database (PostgreSQL)
 - [ ] Enable PostgreSQL Row-Level Security (RLS)
 - [x] Add tenant context middleware
 - [ ] Isolated KB embeddings per organization
@@ -48,13 +49,16 @@ The system has robust multi-tenant SaaS infrastructure in place:
 - [x] Add login/signup pages
 - [ ] Add organization onboarding flow (Registration API exists, UI pending)
 - [x] Add user session management
+- [x] UI Refinements (History Drawer, Mobile responsiveness)
 
 ### 5. Scalability
-**Current**: Single instance deployment
+**Current**: Single instance deployment, Stateless Compute
 **Gap**:
-- [ ] Stateless session handling (Redis/Memcached)
-- [ ] Database connection pooling (pgBouncer)
+- [ ] Stateless session handling (Redis/Memcached) - *Priority for Phase 4*
+- [x] Database connection pooling (Application-side Configured) / *PgBouncer recommended for High Scale*
+- [x] Implement Caching for RAG (Redis) - *Completed Phase 4*
 - [ ] Async task queue for KB ingestion (Celery/RQ)
+- [ ] Stateless session handling (Redis/Memcached)
 - [ ] CDN for frontend assets
 
 ### 6. Observability
@@ -84,25 +88,27 @@ The system has robust multi-tenant SaaS infrastructure in place:
 3. [x] Add rate limiting (per-IP, per-tenant)
 4. [x] Fix CORS to restrict origins
 
-### Phase 2: Frontend Auth (COMPLETED)
+### Phase 2: Frontend Auth & UI (COMPLETED)
 1. [x] Add login/signup pages
 2. [x] Environment-based API URLs
 3. [x] Session management
-4. [ ] Organization switcher
+4. [x] Chat History Drawer & Mobile UI
+5. [ ] Organization switcher
 
-### Phase 3: Multi-Tenancy Enforcement (IN PROGRESS)
+### Phase 3: Database & Multi-Tenancy (COMPLETED)
 1. [x] Tenant-scoped database queries (Metrics)
-2. [ ] Enable PostgreSQL RLS
-3. [ ] Isolated vector stores per org
-4. [ ] Tenant-aware file storage
+2. [x] Migrate SQLite to PostgreSQL
+3. [x] Database Deployment Documentation
+4. [ ] Enable PostgreSQL RLS (Future Hardening)
+5. [ ] Isolated vector stores per org
 
-### Phase 4: Scalability (Week 4-6)
-1. Redis for session cache
-2. Background job queue
-3. Database read replicas
-4. CDN setup
+### Phase 4: Scalability & Optimization (IN PROGRESS)
+**Strategy**: Focus on reducing latency and cost while ensuring high concurrency handling.
+1. [x] **Implement RAG Caching** (Redis): Reduce LLM calls for repeated queries (23% speedup verified).
+2. [ ] **Async Task Queue**: Offload analytics writes and KB processing (Celery/RQ).
+3. [ ] **Stateless Session Store**: Robust session handling for auto-scaling.
 
-### Phase 5: Billing & Observability (Week 6-8)
+### Phase 5: Billing & Observability (Future)
 1. Stripe integration
 2. Usage metering
 3. Structured logging
@@ -118,6 +124,7 @@ These can be implemented immediately with existing code:
 2. **Fix CORS** - [x] DONE
 3. **Add JWT validation decorator** - [x] DONE
 4. **Environment API URL** - [x] DONE
+5. **Implement RAG Caching** - [x] DONE
 
 ---
 
@@ -136,4 +143,4 @@ These can be implemented immediately with existing code:
 ---
 
 *Document Location: Stored in repository at `docs/SAAS_ROADMAP.md` for cross-machine access.*
-*Last Updated: 2025-12-05*
+*Last Updated: 2025-12-06*

@@ -162,8 +162,19 @@ async def run_sync_in_executor(func, *args, **kwargs):
 
 async def query_rag(query_text: str, org_id: str = None):
     """
-    Async implementation of query_rag.
+    Async implementation of query_rag with Redis Caching.
     """
+    # 1. Check Cache
+    from .cache import cache_service
+    # Ensure org_id is string for cache key
+    cache_org_id = str(org_id) if org_id else "demo"
+    
+    cached = cache_service.get_cached_response(cache_org_id, query_text)
+    if cached:
+        # Optional: Indicate cached source?
+        # cached["sources"].append("Cache") 
+        return cached
+
     # Check if this is a location-based query
     if detect_location_query(query_text):
         if is_resort_facility(query_text):
@@ -175,10 +186,13 @@ async def query_rag(query_text: str, org_id: str = None):
                 places = await run_sync_in_executor(search_nearby_places, place_type, radius=10000, max_results=5)
                 answer = format_nearby_results(places, place_type)
                 
-                return {
+                result = {
                     "answer": answer,
                     "sources": ["Google Maps Places API"]
                 }
+                # Cache Map Results
+                cache_service.set_cached_response(cache_org_id, query_text, result)
+                return result
     
     # Fallback to standard RAG
     try:
@@ -235,12 +249,17 @@ async def query_rag(query_text: str, org_id: str = None):
 
         sources = [doc.metadata.get("source", None) for doc, _score in results]
         
-        return {
+        result = {
             "answer": response_text.content,
             "sources": sources
         }
+        # Cache RAG Results
+        cache_service.set_cached_response(cache_org_id, query_text, result)
+        return result
+
     except Exception as e:
         print(f"RAG Error: {str(e)}")
+        # Do NOT cache errors
         return {
             "answer": "System Error: " + str(e),
             "sources": ["System Error"]

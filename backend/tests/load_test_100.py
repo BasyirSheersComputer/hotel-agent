@@ -5,7 +5,7 @@ import time
 import json
 from statistics import mean
 
-API_URL = "http://localhost:8000"
+API_URL = "http://localhost:8001"
 NUM_USERS = 100
 QUERY = "What are the check-in and check-out times?"
 
@@ -14,6 +14,7 @@ async def simulated_user(session, user_id):
     payload = {
         "query": QUERY,
         "agent_id": "default",
+        "language": "en",
         "session_id": f"load-test-{user_id}"
     }
     
