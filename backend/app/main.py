@@ -129,4 +129,14 @@ async def startup_event():
     print(f"Demo Mode: {DEMO_MODE}")
     print(f"Dashboard: {'Enabled' if ENABLE_DASHBOARD else 'Disabled'}")
     print(f"CORS: {'Allow All' if CORS_ALLOW_ALL else 'Restricted'}")
+    
+    # Initialize Database Tables
+    try:
+        from app.database import engine, Base
+        import app.models  # Import models to register them with Base
+        Base.metadata.create_all(bind=engine)
+        print("Database tables initialized.")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+        
     print(f"=" * 60)

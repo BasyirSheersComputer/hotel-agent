@@ -15,11 +15,24 @@ DATABASE_URL = os.getenv(
 )
 
 # Use NullPool for serverless environments like Cloud Run
-engine = create_database_engine = create_engine(
+connect_args = {}
+if "sqlite" in DATABASE_URL:
+    connect_args = {"check_same_thread": False, "timeout": 30} # 30s timeout
+
+engine = create_engine(
     DATABASE_URL,
     poolclass=NullPool if "sqlite" not in DATABASE_URL else None,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
+    connect_args=connect_args,
 )
+
+# Enable WAL mode for SQLite
+if "sqlite" in DATABASE_URL:
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.close()
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

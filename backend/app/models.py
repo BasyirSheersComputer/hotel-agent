@@ -188,3 +188,31 @@ class KBEmbedding(Base):
     # embedding column will be added via Alembic migration with pgvector type
     # embedding = Column(Vector(1536))  # For OpenAI text-embedding-3-small
     meta_data = Column(JSONB if "postgresql" in DATABASE_URL else Text)
+
+class AgentMetric(Base):
+    """
+    Agent performance metrics (tenant-scoped).
+    """
+    __tablename__ = "agent_metrics"
+    __table_args__ = {'extend_existing': True}
+    
+    agent_id = Column(String(255), primary_key=True) # Usually mapped to a name or ID
+    org_id = Column(UUIDType, ForeignKey("organizations.org_id", ondelete="CASCADE"), nullable=False, primary_key=True)
+    first_seen = Column(DateTime(timezone=True), server_default=func.now())
+    last_seen = Column(DateTime(timezone=True), server_default=func.now())
+    total_queries = Column(Integer, default=0)
+
+class PerformanceSnapshot(Base):
+    """
+    Hourly performance snapshots (tenant-scoped).
+    """
+    __tablename__ = "performance_snapshots"
+    __table_args__ = {'extend_existing': True}
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    org_id = Column(UUIDType, ForeignKey("organizations.org_id", ondelete="CASCADE"), nullable=False, index=True)
+    snapshot_time = Column(DateTime(timezone=True), server_default=func.now())
+    total_queries = Column(Integer)
+    avg_response_time_ms = Column(DECIMAL(10, 2))
+    success_rate = Column(DECIMAL(5, 2))
+    unique_agents = Column(Integer)

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional
 from app.services.retrieval import query_rag
@@ -16,6 +16,8 @@ import time
 import os
 import re
 import uuid
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 # Chat requires agent or admin role (demo mode gets admin by default)
 router = APIRouter(dependencies=[Depends(require_agent_or_admin())])
@@ -65,10 +67,15 @@ def estimate_tokens_from_text(text: str) -> int:
     """
     return len(text) // 4
 
+async def run_sync_in_executor(func, *args, **kwargs):
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, lambda: func(*args, **kwargs))
+
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(
     request: ChatRequest,
     http_request: Request,
+    background_tasks: BackgroundTasks,
     current_user: Optional[CurrentUser] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
@@ -86,32 +93,35 @@ async def chat_endpoint(
         
         # If language not provided, auto-detect and translate if needed
         if not user_language:
-            detected_lang = detect_language(request.query)
+            detected_lang = await run_sync_in_executor(detect_language, request.query)
             user_language = detected_lang
         else:
             detected_lang = user_language
         
         # If query is not in English, translate for RAG processing
         if user_language != "en":
-            query_for_rag, _ = translate_to_english(request.query)
+            # returns tuple (text, lang)
+            translation_result = await run_sync_in_executor(translate_to_english, request.query)
+            query_for_rag = translation_result[0]
         
         # Pass org_id for tenant-scoped knowledge base retrieval
-        result = query_rag(query_for_rag, org_id=org_id)
+        # Now awaiting the ASYNC query_rag
+        result = await query_rag(query_for_rag, org_id=org_id)
         
         # Translate response back to user's language if not English
         answer = result["answer"]
         if user_language and user_language != "en":
-            answer = translate_response(answer, user_language)
+            answer = await run_sync_in_executor(translate_response, answer, user_language)
         
         # Calculate response time
         response_time_ms = int((time.time() - start_time) * 1000)
         
-        # Log metrics if enabled
+        # Log metrics in background
         if ENABLE_METRICS:
             try:
                 metrics_service = get_metrics_service()
                 
-                # Determine source type with improved detection
+                # Determine source type
                 sources_str = str(result.get("sources", []))
                 if "Google Maps" in sources_str or "Maps API" in sources_str:
                     source_type = "Maps"
@@ -121,16 +131,15 @@ async def chat_endpoint(
                 # Detect question category
                 question_category = detect_question_category(request.query)
                 
-                # Estimate token usage (prompt + response)
-                # This is a rough estimate - for production, extract from LLM response
+                # Estimate token usage
                 prompt_tokens = estimate_tokens_from_text(request.query)
                 response_tokens = estimate_tokens_from_text(result.get("answer", ""))
                 total_tokens = prompt_tokens + response_tokens
-                
-                # Estimate cost (GPT-4o pricing: $0.03 per 1K tokens)
                 cost_estimate = (total_tokens / 1000) * 0.03
                 
-                metrics_service.log_query(
+                # Add to background tasks (non-blocking)
+                background_tasks.add_task(
+                    metrics_service.log_query,
                     query_text=request.query,
                     response_time_ms=response_time_ms,
                     question_category=question_category,
@@ -142,36 +151,28 @@ async def chat_endpoint(
                     cost_estimate=cost_estimate
                 )
             except Exception as metrics_error:
-                # Don't fail the request if metrics logging fails
-                print(f"Metrics logging error: {metrics_error}")
+                print(f"Metrics scheduling error: {metrics_error}")
         
-        # Save to history if user is authenticated
+        # Save to history (Sync, but fast enough relative to RAG)
         session_id = request.session_id
         if current_user:
             try:
-                # Create session if needed
                 if not session_id:
-                    # Generate a title from the first query (truncate to 50 chars)
                     title = request.query[:50] + "..." if len(request.query) > 50 else request.query
                     session = ChatHistoryService.create_session(db, current_user, title)
                     session_id = str(session.session_id)
                 
-                # Save user message
                 ChatHistoryService.add_message(
                     db, session_id, "user", request.query, current_user
                 )
-                
-                # Save assistant message
                 ChatHistoryService.add_message(
                     db, session_id, "agent", answer, current_user
                 )
             except Exception as history_error:
                 print(f"History saving error: {history_error}")
-                # Don't fail the request if history saving fails, but log it
-                # If session creation failed, we might return without session_id
                 if not session_id:
-                    session_id = str(uuid.uuid4()) # Fallback to random ID if DB fails
-
+                    session_id = str(uuid.uuid4())
+ 
         return ChatResponse(
             answer=answer,
             sources=result["sources"],
@@ -181,21 +182,19 @@ async def chat_endpoint(
     except Exception as e:
         response_time_ms = int((time.time() - start_time) * 1000)
         
-        # Log failed query if metrics enabled
+        # Log failed query in background
         if ENABLE_METRICS:
-            try:
-                metrics_service = get_metrics_service()
-                metrics_service.log_query(
-                    query_text=request.query,
-                    response_time_ms=response_time_ms,
-                    question_category=detect_question_category(request.query),
-                    agent_id=request.agent_id,
-                    org_id=org_id,
-                    success=False,
-                    error_message=str(e)
-                )
-            except Exception as metrics_error:
-                print(f"Metrics logging error: {metrics_error}")
+            metrics_service = get_metrics_service()
+            background_tasks.add_task(
+                metrics_service.log_query,
+                query_text=request.query,
+                response_time_ms=response_time_ms,
+                question_category=detect_question_category(request.query),
+                agent_id=request.agent_id,
+                org_id=org_id,
+                success=False,
+                error_message=str(e)
+            )
         
         raise HTTPException(status_code=500, detail=str(e))
 
