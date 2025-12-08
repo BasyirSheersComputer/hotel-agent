@@ -1,0 +1,30 @@
+RESORT GENIUS - AI PERFORMANCE & FINANCIAL REPORT
+Generated On,2025-12-08 08:51:59
+Period Filters,"Start: N/A, End: N/A, Hours: 720"
+
+--- EXECUTIVE FINANCIAL SUMMARY ---
+Metric,Value,Notes
+Total Value Created,"$2,502.08",Revenue Potential + Labor Savings
+Net Benefit,"$1,002.07",Total Value - AI Costs
+ROI Multiplier,1.7x,"For every $1 spent on AI, $X is returned"
+
+--- OPERATIONAL EFFICIENCY ---
+Total Queries Handled,1,Volume
+Labor Hours Saved,0.1 hrs,vs Manual Handling (5min avg)
+FTE Reallocation Value,0.00 FTEs,Equivalent Full-Time Employees
+Est. Labor Cost Savings,$2.08,@ $25.0/hr
+
+--- REVENUE GENERATION ---
+Total Revenue Potential,"$2,500.00",From Bookings & Upsells
+Booking Leads,1,High Intent
+Upsell Opportunities,1,Upgrade Intent
+
+--- COST BREAKDOWN ---
+AI Compute Costs,$0.01,LLM Tokens
+Infrastructure Est.,"$1,500.00",Server/Hosting
+Total System Cost,"$1,500.02",
+
+
+--- DETAILED TRANSACTION LOGS ---
+Timestamp,Agent ID,Category,Query Preview,Response Time (ms),Tokens,Cost ($),Accuracy,Hold Time (ms),SOP Compliant,Revenue Potential ($),Booking Intent,CSAT
+2025-12-08 00:42:59,agent-007,Booking,I want to book the Presidential Suite and order ch...,1200,500,0.0150,0.98,0,Yes,2500.00,Yes,5

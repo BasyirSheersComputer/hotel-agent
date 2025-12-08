@@ -1,0 +1,127 @@
+================================================================================
+QUERY: What are the restaurant operating hours?
+================================================================================
+ANSWER: ### Restaurant Operating Hours
+
+- **MUTIARA RESTAURANT (Main Buffet):**
+  - **Breakfast:** 7:15 AM - 9:30 AM
+  - **Lunch:** 12:00 PM - 2:00 PM
+  - **Dinner:** 6:45 PM - 9:00 PM
+
+  
+- **REMBULAN RESTAURANT (Specialty):**
+  - **Late Lunch Buffet:** 1:00 PM - 2:30 PM (no reservations needed)
+  - **Dinner:** 7:00 PM - 9:30 PM (reservations required, book at main bar 1 day in advance)
+  - **Closed:** Tuesdays and occasionally other days
+
+  
+- **ENAK RESTAURANT (Casual/Snacks):**
+  - **Late Breakfast:** 9:45 AM - 10:45 AM
+  - **Late Lunch:** 2:30 PM - 6:00 PM
+  - **Supper:** 9:15 PM - 10:45 PM
+================================================================================
+SOURCES:
+- comprehensive_knowledge.txt
+- comprehensive_knowledge.txt
+- comprehensive_knowledge.txt
+================================================================================
+
+================================================================================
+QUERY: Tell me about the Kids Clubs - what ages and costs?
+================================================================================
+ANSWER: ### Kids Clubs Overview
+
+- **Baby Club (4-23 months)**:  
+  - **Cost**: EXTRA COST  
+  - Activities include outdoor walks, nursery rhymes, and music.  
+
+- **Petit Club (2-3 years)**:  
+  - **Cost**: EXTRA COST  
+  - Activities include early learning, painting, dancing, and music.  
+
+- **Mini Club (4-10 years)**:  
+  - **Cost**: INCLUDED  
+  - Activities include sports, creative arts, nature exploration, flying trapeze, and cooking.  
+
+- **Passworld (11-17 years)**:  
+  - **Cost**: INCLUDED  
+  - Offers creative, sports, and artistic activities, along with a Chill Pass for ages 14-17.  
+================================================================================
+SOURCES:
+- comprehensive_knowledge.txt
+- comprehensive_knowledge.txt
+- comprehensive_knowledge.txt
+================================================================================
+
+================================================================================
+QUERY: Do you allow pets and smoking?
+================================================================================
+ANSWER: ### Pets Policy:
+- **Pets are not allowed** on the premises.
+
+### Smoking Policy:
+- **Club Med Cherating is a completely non-smoking resort.**
+  - All indoor areas and rooms are non-smoking.
+  - This includes electronic cigarettes.
+================================================================================
+SOURCES:
+- comprehensive_knowledge.txt
+- comprehensive_knowledge.txt
+- comprehensive_knowledge.txt
+================================================================================
+
+================================================================================
+QUERY: Is parking free?
+================================================================================
+ANSWER: ### Parking Information:
+
+- **Is parking free?**
+  - Yes, parking at Club Med Cherating is free.
+  
+- **Parking Details:**
+  - Open-air car park on-site with no charge.
+  - Parking is on a first-come, first-served basis.
+  - It is recommended to provide your car plate number in advance for smoother entry.
+  - Upon arrival, drop off at the lobby to receive a parking coupon before proceeding to park.
+
+- **For groups or multiple vehicles:**
+  - Contact the resort in advance to arrange appropriate parking based on availability.
+================================================================================
+SOURCES:
+- comprehensive_knowledge.txt
+- comprehensive_knowledge.txt
+- comprehensive_knowledge.txt
+================================================================================
+
+================================================================================
+QUERY: What's included in the all-inclusive package?
+================================================================================
+ANSWER: ### What's Included in the All-Inclusive Package:
+
+- **Accommodation**
+
+- **Unlimited gourmet meals:**
+  - Breakfast, lunch, and dinner
+  - Unlimited snacks throughout the day
+
+- **Open bar:**
+  - Alcoholic and non-alcoholic beverages included
+  - Excluding premium spirits
+
+- **All land and water sports activities:**
+  - Excludes premium options
+
+- **Kids Clubs:**
+  - For ages 4-17
+
+- **Evening entertainment and shows**
+
+- **Group fitness classes and lessons**
+
+- **Wi-Fi access**
+================================================================================
+SOURCES:
+- comprehensive_knowledge.txt
+- comprehensive_knowledge.txt
+- comprehensive_knowledge.txt
+================================================================================
