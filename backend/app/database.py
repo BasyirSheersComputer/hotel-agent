@@ -71,11 +71,25 @@ def set_tenant_context(connection, org_id: str):
         connection.execute(f"SET app.current_org_id = '{org_id}'")
 
 # PostgreSQL-specific: Enable RLS on connection
+from app.core.context import get_tenant_id
+
+def receive_checkout(dbapi_conn, connection_record, connection_proxy):
+    """
+    Called when a connection is retrieved from the pool.
+    Sets the application user/tenant for RLS.
+    """
+    org_id = get_tenant_id()
+    cursor = dbapi_conn.cursor()
+    
+    if org_id:
+        # Set variable for RLS policies
+        cursor.execute(f"SET app.current_org_id = '{org_id}'")
+    else:
+        # Reset variable if no tenant (e.g. public routes or background tasks)
+        # This prevents leaking context from previous user in pooled connection
+        cursor.execute("SET app.current_org_id = ''")
+        
+    cursor.close()
+
 if "postgresql" in DATABASE_URL:
-    @event.listens_for(engine, "connect")
-    def receive_connect(dbapi_conn, connection_record):
-        """
-        Called on each new database connection.
-        Can be used to set session parameters.
-        """
-        pass  # RLS context set per-request in middleware
+    event.listen(engine, "checkout", receive_checkout)

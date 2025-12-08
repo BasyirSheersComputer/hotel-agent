@@ -13,7 +13,9 @@ Resort Genius is an AI-powered agent assist platform that delivers instant, accu
 
 - **Hybrid Intelligence Engine**: Combines RAG (Retrieval-Augmented Generation) with Google Maps API
 - **Smart Query Routing**: 100% accuracy in detecting internal vs external queries
-- **Performance Analytics**: Real-time dashboard tracking metrics, costs, and agent performance
+- **CFO-Grade Analytics**: Real-time financial & operational metrics (ROI, Efficiency, Accuracy, CSAT)
+- **Automated Reporting**: "Club Med" style PDF/CSV executive summaries
+- **Multi-Language Support**: Real-time auto-translation for 50+ languages
 - **Cloud-Native**: Deployable to Google Cloud Run or any container platform
 
 ---
@@ -110,14 +112,11 @@ Frontend → Backend (Multi-tenant) → PostgreSQL + RLS
 | RAG Knowledge Retrieval | ✅ |
 | Google Maps Integration | ✅ |
 | Smart Query Routing | ✅ |
-| Performance Dashboard | ✅ |
-| Real-time Metrics | ✅ |
-| Chat-Dashboard Integration | ✅ |
+| ROI/Financial Dashboard | ✅ |
+| PDF/CSV Reporting | ✅ |
+| Multi-Language Support | ✅ |
+| Persistent Chat History | ✅ |
 | User Authentication | ❌ |
-| Multi-Tenant Support | ❌ |
-| Persistent Chat History | ❌ |
-| Admin KB Management | ❌ |
-| Multi-Language Support | ❌ |
 
 ### v2.0 - SaaS (Development Branch: `feature/v2-saas`)
 
@@ -213,8 +212,10 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ### Endpoints (v1.0)
 
-- `POST /api/chat` - Submit query and get answer
-- `GET /api/metrics/summary` - Get dashboard summary metrics
+- `POST /api/chat` - Submit query (supports multi-language)
+- `GET /api/metrics/summary` - Get dashboard ROI summary
+- `GET /api/reports/export` - Export financial CSV reports
+- `GET /api/reports/export-pdf` - Export Executive PDF Summary
 - `GET /api/metrics/categories` - Get question category breakdown
 - `GET /api/metrics/trends` - Get hourly trends
 - `GET /api/metrics/agents` - Get agent performance

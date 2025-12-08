@@ -16,6 +16,36 @@ The system has robust multi-tenant SaaS infrastructure in place:
 
 ---
 
+---
+
+## 🚨 World-Class SaaS Audit (Critical Gaps)
+
+To meet "World-Class" standards, the following areas require immediate prioritization over new feature development:
+
+### 1. Commercial Readiness (The "Money" Gap)
+- **Critical**: No automated billing or subscription management.
+- **Why**: "World-class" means self-serve. Manual invoicing halts growth.
+- **Requirement**: Stripe Integration + Customer Portal (Invoice history, Plan upgrades).
+
+### 2. Enterprise Security (The "Trust" Gap)
+- **Critical**: Row-Level Security (RLS) is marked as "Future".
+- **Why**: App-level filtering (`.filter(org_id=...)`) is prone to developer error. One bug leaks data.
+- **Requirement**: Enforce RLS at the PostgreSQL database level immediately.
+- **Requirement**: Audit Logs for all sensitive actions (who viewed what report).
+
+### 3. Operational Maturity (The "Scale" Gap)
+- **Critical**: "Basic print logging". No standardized observability.
+- **Why**: You cannot debug production issues effectively without structured logs/tracing.
+- **Requirement**: OpenTelemetry setup + Centralized Logging (ELK/Datadog/Cloud Logging).
+- **Requirement**: automated SLA monitoring (Uptime, P99 Latency).
+
+### 4. Developer Experience (API Standards)
+- **Critical**: No mentioned API versioning strategy.
+- **Why**: Breaking changes kill ecosystem integrations.
+- **Requirement**: Semantic Versioning on API + OpenAPI strict generation.
+
+---
+
 ## Gap Analysis: Current vs Target SaaS
 
 ### 1. Authentication & Authorization
@@ -59,9 +89,9 @@ The system has robust multi-tenant SaaS infrastructure in place:
 **Current**: Single instance deployment, Stateless Compute
 **Gap**:
 - [ ] Stateless session handling (Redis/Memcached) - *Priority for Phase 4*
-- [x] Database connection pooling (Application-side Configured) / *PgBouncer recommended for High Scale*
-- [x] Implement Caching for RAG (Redis) - *Completed Phase 4*
-- [ ] Async task queue for KB ingestion (Celery/RQ)
+- [x] Database connection pooling (Application-side Configured)
+- [x] Implement Caching for RAG (Redis) - *Implemented in app/services/cache.py*
+- [x] Async task queue (BackgroundTasks implemented for Metrics)
 - [ ] Stateless session handling (Redis/Memcached)
 - [ ] CDN for frontend assets
 
@@ -107,17 +137,24 @@ The system has robust multi-tenant SaaS infrastructure in place:
 4. [ ] Enable PostgreSQL RLS (Future Hardening)
 5. [ ] Isolated vector stores per org
 
-### Phase 4: Scalability & Optimization (IN PROGRESS)
-**Strategy**: Focus on reducing latency and cost while ensuring high concurrency handling.
+### Phase 4: Scalability & Operational Maturity (IMMEDIATE PRIORITIES)
+**Strategy**: Focus on reducing latency and cost while ensuring world-class reliability.
 1. [x] **Implement RAG Caching** (Redis): Reduce LLM calls for repeated queries (23% speedup verified).
-2. [ ] **Async Task Queue**: Offload analytics writes and KB processing (Celery/RQ).
-3. [ ] **Stateless Session Store**: Robust session handling for auto-scaling.
+2. [x] **Async Processing**: Offload analytics writes using FastAPI BackgroundTasks.
+3. [ ] **Centralized Logging (ELK/OpenTelemetry)**: Structured logging for all services.
+4. [ ] **Stripe Billing Integration**: Self-serve checkout and plan management.
+5. [ ] **Row-Level Security (RLS)**: Database-level tenant isolation.
 
-### Phase 5: Billing & Observability (Future)
-1. Stripe integration
-2. Usage metering
-3. Structured logging
-4. Monitoring dashboards
+### Phase 5: CFO Analytics & Reporting (COMPLETED)
+**Strategy**: Provide high-value financial insights.
+1. [x] **ROI Dashboard**: Visualization of Accuracy, Efficiency, Revenue, and CSAT.
+2. [x] **Executive Reporting**: PDF/CSV exports with "Club Med" styling.
+3. [x] **Multi-Language**: Auto-translation layer for global support.
+
+### Phase 6: Future Enhancements
+1. Usage metering (Granular)
+2. Distributed Tracing
+3. Monitoring dashboards
 
 ---
 
@@ -177,4 +214,4 @@ npm run dev
 ---
 
 *Document Location: Stored in repository at `docs/SAAS_ROADMAP.md` for cross-machine access.*
-*Last Updated: 2024-12-06*
+*Last Updated: 2025-12-08*

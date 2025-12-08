@@ -1,24 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hotel Agent Frontend
 
-## Getting Started
+A Next.js 16 application for the Resort Genius AI Agent interface.
 
-First, run the development server:
+## 🚀 Features
+- **Chat Interface**: Real-time AI chat with glassmorphism UI.
+- **CFO Dashboard**: Financial and operational analytics with ROI quadrants.
+- **Reporting**: PDF and CSV export capabilities.
+- **Interactive**: Real-time charts using Recharts.
 
+## 🛠 Setup
+
+1. **Install Dependencies**:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. **Environment Variables**:
+Create `.env.local`:
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. **Run Development Server**:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000) for the Chat Interface.
+Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard) for the CFO Dashboard.
 
 ## Learn More
 

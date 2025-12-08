@@ -29,6 +29,10 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
                 request.state.org_id = None
             request.state.is_demo = False
         
+        # Set ContextVar for deep access (DB listeners)
+        from app.core.context import set_tenant_id
+        set_tenant_id(request.state.org_id)
+        
         response = await call_next(request)
         return response
 

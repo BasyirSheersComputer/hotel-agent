@@ -19,6 +19,7 @@ from app.config.settings import (
     DEMO_MODE, CORS_ALLOW_ALL, CORS_ALLOWED_ORIGINS,
     ENABLE_DASHBOARD, get_current_mode
 )
+from app.core.logger import configure_logging
 
 # Import routers
 from app.api import chat, dashboard, admin, history
@@ -65,10 +66,14 @@ else:
         allow_headers=["Authorization", "Content-Type", "X-Tenant-ID"],
     )
 
-# 2. Tenant Context - sets org_id in request state
+# 2. Logging - Intercepts requests for JSON logs
+from app.middleware.logging import StructLogMiddleware
+app.add_middleware(StructLogMiddleware)
+
+# 3. Tenant Context - sets org_id in request state
 app.add_middleware(TenantContextMiddleware)
 
-# 3. Rate Limiting - demo mode bypassed
+# 4. Rate Limiting - demo mode bypassed
 app.add_middleware(RateLimitMiddleware)
 
 # =============================================================================
@@ -123,6 +128,9 @@ async def health_check():
 @app.on_event("startup")
 async def startup_event():
     """Application startup tasks."""
+    # Initialize Logging
+    configure_logging()
+    
     print(f"=" * 60)
     print(f"Resort Genius API Starting")
     print(f"Mode: {get_current_mode()}")
