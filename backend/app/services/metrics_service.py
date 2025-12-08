@@ -32,10 +32,20 @@ class MetricsService:
         success: bool = True,
         error_message: Optional[str] = None,
         tokens_used: int = 0,
-        cost_estimate: float = 0.0
+        cost_estimate: float = 0.0,
+        # New CFO Metrics
+        hold_time_ms: int = 0,
+        escalation_needed: bool = False,
+        is_sop_compliant: bool = True,
+        correct_on_first_try: bool = True,
+        booking_intent: bool = False,
+        upsell_intent: bool = False,
+        revenue_potential: float = 0.0,
+        sentiment_score: float = 0.0,
+        csat_rating: int = 5
     ) -> str:
         """
-        Log a query to the metrics database
+        Log a query to the metrics database (Enhanced with ROI Quadrants)
         Returns: query_id (UUID string)
         """
         session = SessionLocal()
@@ -68,7 +78,18 @@ class MetricsService:
                 tokens_used=tokens_used,
                 cost_estimate=cost_estimate,
                 accuracy_score=accuracy_score,
-                aht_saved_s=int(aht_saved_s)
+                aht_saved_s=int(aht_saved_s),
+                
+                # New Metrics
+                hold_time_ms=hold_time_ms,
+                escalation_needed=escalation_needed,
+                is_sop_compliant=is_sop_compliant,
+                correct_on_first_try=correct_on_first_try,
+                booking_intent=booking_intent,
+                upsell_intent=upsell_intent,
+                revenue_potential=revenue_potential,
+                sentiment_score=sentiment_score,
+                csat_rating=csat_rating
             )
             session.add(query_record)
             session.commit()
@@ -97,7 +118,7 @@ class MetricsService:
         except Exception as e:
             session.rollback()
             print(f"Error logging query: {e}")
-            return ""
+            raise e # FORCE ERROR VISIBILITY
         finally:
             session.close()
 
@@ -124,7 +145,16 @@ class MetricsService:
                 func.sum(case((Query.source_type == 'RAG', 1), else_=0)).label("rag_count"),
                 func.sum(case((Query.source_type == 'Maps', 1), else_=0)).label("maps_count"),
                 # Distinct agents
-                func.count(func.distinct(Query.agent_id)).label("unique_agents")
+                func.count(func.distinct(Query.agent_id)).label("unique_agents"),
+                
+                # New Aggregations
+                func.avg(Query.sentiment_score).label("avg_sentiment"),
+                func.avg(Query.csat_rating).label("avg_csat"),
+                func.sum(case((Query.booking_intent == True, 1), else_=0)).label("booking_leads"),
+                func.sum(case((Query.upsell_intent == True, 1), else_=0)).label("upsell_opportunities"),
+                func.sum(Query.revenue_potential).label("total_revenue_potential"),
+                func.sum(case((Query.is_sop_compliant == True, 1), else_=0)).label("sop_compliant_count"),
+                func.sum(case((Query.correct_on_first_try == True, 1), else_=0)).label("fcr_count")
             ).first()
             
             total_queries = stats.total or 0
@@ -139,6 +169,19 @@ class MetricsService:
             rag_count = stats.rag_count or 0
             maps_count = stats.maps_count or 0
             unique_agents = stats.unique_agents or 0
+            
+            # New Stats Processing
+            avg_sentiment = float(stats.avg_sentiment or 0)
+            avg_csat = float(stats.avg_csat or 0)
+            booking_leads = stats.booking_leads or 0
+            upsell_opportunities = stats.upsell_opportunities or 0
+            total_revenue_potential = float(stats.total_revenue_potential or 0)
+            sop_compliant_count = stats.sop_compliant_count or 0
+            fcr_count = stats.fcr_count or 0
+            
+            sop_compliance_rate = (sop_compliant_count / total_queries * 100) if total_queries > 0 else 100.0
+            fcr_rate = (fcr_count / total_queries * 100) if total_queries > 0 else 100.0
+            booking_conversion_rate = (booking_leads / total_queries * 100) if total_queries > 0 else 0.0
             
             # Simulations for display
             aht_reduction_percent = 0
@@ -166,7 +209,17 @@ class MetricsService:
                 "tokens_used": int(total_tokens),
                 "estimated_cost": round(total_cost, 4),
                 "rate_limit_status": "Healthy",
-                "cost_breakdown": "GPT-4o: 80%, Maps: 20%"
+                "cost_breakdown": "GPT-4o: 80%, Maps: 20%",
+                
+                # New ROI Metrics
+                "avg_sentiment": round(avg_sentiment, 2),
+                "avg_csat": round(avg_csat, 1),
+                "booking_leads": booking_leads,
+                "upsell_opportunities": upsell_opportunities,
+                "total_revenue_potential": round(total_revenue_potential, 2),
+                "sop_compliance_rate": round(sop_compliance_rate, 1),
+                "fcr_rate": round(fcr_rate, 1),
+                "booking_conversion_rate": round(booking_conversion_rate, 1)
             }
         except Exception as e:
             print(f"Error fetching metrics summary: {e}")

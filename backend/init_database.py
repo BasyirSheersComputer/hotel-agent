@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from app.database import engine, Base, SessionLocal
 from app.models import Organization, User
 from app.services.auth_service import AuthService
+from app.config.settings import DEMO_ORG_ID, DEMO_USER_ID, DEMO_USER_EMAIL, DEMO_ORG_SLUG, DEMO_USER_ROLE
 import uuid
 
 def init_database():
@@ -30,7 +31,7 @@ def create_demo_org():
     
     try:
         # Check if demo org already exists
-        existing = db.query(Organization).filter(Organization.slug == "demo-hotel").first()
+        existing = db.query(Organization).filter(Organization.slug == DEMO_ORG_SLUG).first()
         if existing:
             print("ℹ Demo organization already exists")
             return
@@ -39,9 +40,9 @@ def create_demo_org():
         
         # Create demo organization
         demo_org = Organization(
-            org_id=uuid.uuid4(),
+            org_id=uuid.UUID(DEMO_ORG_ID),
             name="Demo Hotel",
-            slug="demo-hotel",
+            slug=DEMO_ORG_SLUG,
             plan="pro"
         )
         db.add(demo_org)
@@ -49,9 +50,9 @@ def create_demo_org():
         
         # Create admin user
         admin_user = User(
-            user_id=uuid.uuid4(),
+            user_id=uuid.UUID(DEMO_USER_ID),
             org_id=demo_org.org_id,
-            email="admin@demo-hotel.com",
+            email=DEMO_USER_EMAIL,
             password_hash=AuthService.hash_password("admin123"),
             name="Admin User",
             role="admin"

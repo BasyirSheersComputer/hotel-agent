@@ -137,6 +137,45 @@ async def chat_endpoint(
                 total_tokens = prompt_tokens + response_tokens
                 cost_estimate = (total_tokens / 1000) * 0.03
                 
+                # Intent & Sentiment Analysis (Heuristic Rule-Based)
+                query_lower = request.query.lower()
+                answer_lower = answer.lower()
+                
+                # Booking Intent
+                booking_keywords = ["book", "reservation", "reserve", "price", "cost", "availability", "check-in", "stay"]
+                booking_intent = any(k in query_lower for k in booking_keywords)
+                
+                # Upsell Intent
+                upsell_keywords = ["upgrade", "suite", "premium", "private", "luxury", "spa package", "romantic dinner"]
+                upsell_intent = any(k in query_lower for k in upsell_keywords)
+                
+                # Revenue Potential Estimate
+                revenue_potential = 0.0
+                if booking_intent:
+                    revenue_potential += 1500.00 # Avg booking value
+                if upsell_intent:
+                    revenue_potential += 300.00 # Avg upsell value
+                
+                # Sentiment Analysis (Basic)
+                sentiment_score = 0.0
+                positive_words = ["thank", "great", "good", "helpful", "amazing", "perfect", "excellent"]
+                negative_words = ["bad", "wrong", "useless", "confusing", "error", "stupid"]
+                
+                if any(w in query_lower for w in positive_words):
+                    sentiment_score += 0.5
+                if any(w in query_lower for w in negative_words):
+                    sentiment_score -= 0.5
+                    
+                csat_rating = 5 if sentiment_score >= 0 else 3
+                
+                # SOP Compliance (Simulated based on RAG usage)
+                is_sop_compliant = True if result.get("sources") else False
+                
+                # Examples in prompt...
+                
+                # SOP Compliance (Simulated based on RAG usage)
+                is_sop_compliant = True if result.get("sources") else False
+                
                 # Add to background tasks (non-blocking)
                 background_tasks.add_task(
                     metrics_service.log_query,
@@ -148,7 +187,17 @@ async def chat_endpoint(
                     org_id=org_id,
                     success=True,
                     tokens_used=total_tokens,
-                    cost_estimate=cost_estimate
+                    cost_estimate=cost_estimate,
+                    # New Metrics
+                    hold_time_ms=0, # Near zero for AI
+                    escalation_needed=False, # Default
+                    is_sop_compliant=is_sop_compliant,
+                    correct_on_first_try=True, # Assessing as true if successful response
+                    booking_intent=booking_intent,
+                    upsell_intent=upsell_intent,
+                    revenue_potential=revenue_potential,
+                    sentiment_score=sentiment_score,
+                    csat_rating=csat_rating
                 )
             except Exception as metrics_error:
                 print(f"Metrics scheduling error: {metrics_error}")

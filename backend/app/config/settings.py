@@ -22,7 +22,7 @@ import uuid
 # - CORS restricted to whitelisted origins
 # =============================================================================
 
-DEMO_MODE = False # os.getenv("DEMO_MODE", "true").lower() == "true"
+DEMO_MODE = os.getenv("DEMO_MODE", "true").lower() == "true"
 
 # Demo tenant and user (used when DEMO_MODE=true)
 DEMO_ORG_ID = os.getenv("DEMO_ORG_ID", "00000000-0000-0000-0000-000000000001")

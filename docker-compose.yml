@@ -14,7 +14,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-resort_genius}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-resort_genius}" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -31,7 +31,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-dev_redis_123}", "ping"]
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-dev_redis_123}", "ping" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -72,6 +72,7 @@ services:
       - REDIS_URL=redis://:${REDIS_PASSWORD:-dev_redis_123}@redis:6379/0
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - DEMO_MODE=${DEMO_MODE:-false}
       - PORT=8000
     depends_on:
       postgres:
@@ -87,18 +88,20 @@ services:
       - hotel-agent-network
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run dev -- -H 0.0.0.0"
     container_name: resort_genius_frontend
     ports:
-      - "8080:80"
+      - "8080:3000"
     depends_on:
       - backend
     environment:
       - BACKEND_URL=http://backend:8000
     healthcheck:
-      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/" ]
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/" ]
       interval: 30s
       timeout: 3s
       retries: 3

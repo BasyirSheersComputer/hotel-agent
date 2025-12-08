@@ -8,7 +8,7 @@
  */
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 // API Base URL
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -36,6 +36,16 @@ interface MetricsSummary {
     estimated_cost: number;
     rate_limit_status: string;
     cost_breakdown: string;
+
+    // New ROI Metrics
+    avg_sentiment: number;
+    avg_csat: number;
+    booking_leads: number;
+    upsell_opportunities: number;
+    total_revenue_potential: number;
+    sop_compliance_rate: number;
+    fcr_rate: number;
+    booking_conversion_rate: number;
 }
 
 interface CategoryMetric {
@@ -60,7 +70,49 @@ interface AgentMetric {
     lastActive: string;
 }
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null }> {
+    constructor(props: { children: React.ReactNode }) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error: Error) {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        console.error("Dashboard Error:", error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="flex items-center justify-center min-h-screen bg-red-50 p-6">
+                    <div className="bg-white rounded-xl border border-red-200 p-8 shadow-sm max-w-lg w-full">
+                        <h2 className="text-xl font-bold text-red-800 mb-4">Something went wrong.</h2>
+                        <div className="p-4 bg-slate-50 rounded-lg text-sm font-mono text-slate-700 overflow-auto max-h-60">
+                            {this.state.error && this.state.error.toString()}
+                        </div>
+                        <p className="mt-4 text-slate-500 text-sm">Please refresh the page or check the console.</p>
+                    </div>
+                </div>
+            );
+        }
+
+        return this.props.children;
+    }
+}
+
 export default function Dashboard() {
+    return (
+        <ErrorBoundary>
+            <DashboardContent />
+        </ErrorBoundary>
+    );
+}
+
+function DashboardContent() {
     const [timeRange, setTimeRange] = useState<number>(24);
     const [summary, setSummary] = useState<MetricsSummary | null>(null);
     const [categories, setCategories] = useState<CategoryMetric[]>([]);
@@ -88,6 +140,7 @@ export default function Dashboard() {
             setTrends(await trendsRes.json());
             setAgents(await agentsRes.json());
         } catch (err) {
+            console.error(err);
             setError(err instanceof Error ? err.message : "Failed to fetch metrics");
         } finally {
             setLoading(false);
@@ -96,7 +149,7 @@ export default function Dashboard() {
 
     useEffect(() => {
         fetchMetrics();
-        const interval = setInterval(fetchMetrics, 60000);
+        const interval = setInterval(fetchMetrics, 5000); // 5s Refresh for real-time feel
         return () => clearInterval(interval);
     }, [timeRange]);
 
@@ -128,7 +181,7 @@ export default function Dashboard() {
                 <div className="w-full flex justify-between items-center p-6 md:p-8 border-b border-black/5 bg-white/50">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#0F4C81]">Analytics Dashboard</h1>
-                        <p className="text-slate-500 text-sm mt-1">Real-time performance metrics</p>
+                        <p className="text-slate-500 text-sm mt-1">CFO ROI Metrics & Performance</p>
                     </div>
                     <div className="flex gap-2 bg-white p-1 rounded-lg border border-black/5 shadow-sm">
                         {[24, 48, 168].map((hours) => (
@@ -148,35 +201,54 @@ export default function Dashboard() {
 
                 {/* Scrollable Content Area */}
                 <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 scroll-smooth">
-                    {/* KPI Row */}
+                    {/* ROI Quadrants */}
                     {summary && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {/* Efficiency Quadrant */}
                             <KPICard
-                                label="Total Queries Today"
-                                value={summary.total_queries.toLocaleString()}
-                                icon="💬"
-                            />
-                            <KPICard
-                                label="Avg Response Time"
-                                value={`${summary.avg_response_time_ms.toFixed(0)}ms`}
+                                label="Efficiency (Speed)"
+                                value={`${(summary.avg_response_time_ms || 0).toFixed(0)}ms`}
                                 icon="⚡"
-                                badge={summary.avg_response_time_ms > 3000 ? { text: "Needs improvement", color: "warning" } : undefined}
-                            />
-                            <KPICard
-                                label="Accuracy Score"
-                                value={`${summary.accuracy_percent}%`}
-                                icon="🎯"
+                                badge={{ text: "AHT", color: "neutral" }}
                                 subValues={[
-                                    { label: "Internal", value: `${summary.internal_accuracy_percent}%` },
-                                    { label: "External", value: `${summary.external_accuracy_percent}%` }
+                                    { label: "Queries", value: summary.total_queries || 0 },
+                                    { label: "AHT Saved", value: `${summary.aht_reduction_percent || 0}%`, color: "text-green-600" }
                                 ]}
                             />
+
+                            {/* Accuracy Quadrant */}
                             <KPICard
-                                label="AHT Reduction"
-                                value={`${summary.aht_reduction_percent}%`}
-                                icon="📉"
+                                label="Accuracy & Quality"
+                                value={`${summary.sop_compliance_rate || 0}%`}
+                                icon="✅"
+                                badge={{ text: "SOP Compliant", color: "success" }}
                                 subValues={[
-                                    { label: "Delta", value: `+${summary.aht_delta_percent}%`, color: "text-green-600" }
+                                    { label: "Accuracy", value: `${summary.accuracy_percent || 0}%` },
+                                    { label: "FCR", value: `${summary.fcr_rate || 0}%` }
+                                ]}
+                            />
+
+                            {/* Revenue Quadrant */}
+                            <KPICard
+                                label="Revenue Impact"
+                                value={`$${(summary.total_revenue_potential || 0).toLocaleString()}`}
+                                icon="💰"
+                                badge={{ text: "Potential", color: "success" }}
+                                subValues={[
+                                    { label: "Leads", value: summary.booking_leads || 0 },
+                                    { label: "Upsells", value: summary.upsell_opportunities || 0 }
+                                ]}
+                            />
+
+                            {/* CSAT Quadrant */}
+                            <KPICard
+                                label="Customer Satisfaction"
+                                value={`${(summary.avg_csat || 0).toFixed(1)}/5`}
+                                icon="💖"
+                                badge={{ text: "CSAT", color: "neutral" }}
+                                subValues={[
+                                    { label: "Sentiment", value: (summary.avg_sentiment || 0) > 0 ? "Positive" : "Neutral" },
+                                    { label: "Score", value: (summary.avg_sentiment || 0).toFixed(2) }
                                 ]}
                             />
                         </div>
@@ -199,14 +271,14 @@ export default function Dashboard() {
                                     <div className="space-y-4">
                                         <SourceBar
                                             label="RAG Queries"
-                                            count={summary.rag_count}
-                                            percentage={summary.rag_percentage}
+                                            count={summary.rag_count || 0}
+                                            percentage={summary.rag_percentage || 0}
                                             color="bg-[#0F4C81]"
                                         />
                                         <SourceBar
                                             label="Maps Queries"
-                                            count={summary.maps_count}
-                                            percentage={summary.maps_percentage}
+                                            count={summary.maps_count || 0}
+                                            percentage={summary.maps_percentage || 0}
                                             color="bg-[#1A5F9A]"
                                         />
                                     </div>
@@ -220,20 +292,20 @@ export default function Dashboard() {
                                     <div className="space-y-3 text-sm">
                                         <div className="flex justify-between py-2 border-b border-black/5">
                                             <span className="text-slate-500">Tokens Used</span>
-                                            <span className="font-medium text-slate-900">{summary.tokens_used.toLocaleString()}</span>
+                                            <span className="font-medium text-slate-900">{(summary.tokens_used || 0).toLocaleString()}</span>
                                         </div>
                                         <div className="flex justify-between py-2 border-b border-black/5">
                                             <span className="text-slate-500">Est. Cost</span>
-                                            <span className="font-medium text-slate-900">${summary.estimated_cost.toFixed(4)}</span>
+                                            <span className="font-medium text-slate-900">${(summary.estimated_cost || 0).toFixed(4)}</span>
                                         </div>
                                         <div className="flex justify-between py-2 border-b border-black/5">
                                             <span className="text-slate-500">Rate Limit</span>
-                                            <span className="font-medium text-green-600">{summary.rate_limit_status}</span>
+                                            <span className="font-medium text-green-600">{summary.rate_limit_status || "Unknown"}</span>
                                         </div>
                                         <div className="pt-2">
                                             <span className="text-slate-500 block mb-1">Breakdown</span>
                                             <span className="text-xs text-slate-700 bg-slate-50 px-2 py-1 rounded block border border-slate-100">
-                                                {summary.cost_breakdown}
+                                                {summary.cost_breakdown || "N/A"}
                                             </span>
                                         </div>
                                     </div>
@@ -260,7 +332,7 @@ export default function Dashboard() {
                                             <tr key={agent.name} className="hover:bg-slate-50/50 transition-colors">
                                                 <td className="px-6 py-4 font-medium text-slate-900">{agent.name}</td>
                                                 <td className="px-6 py-4 text-right text-slate-600">{agent.queryCount}</td>
-                                                <td className="px-6 py-4 text-right text-slate-600">{agent.avgTimeMs.toFixed(0)}ms</td>
+                                                <td className="px-6 py-4 text-right text-slate-600">{(agent.avgTimeMs || 0).toFixed(0)}ms</td>
                                                 <td className="px-6 py-4 text-right">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${agent.accuracyPercent >= 90 ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
                                                         }`}>
@@ -268,7 +340,17 @@ export default function Dashboard() {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-right text-slate-500">
-                                                    {new Date(agent.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    {(() => {
+                                                        try {
+                                                            // Ensure ISO format for cross-browser compatibility
+                                                            const validDateStr = (agent.lastActive || "").replace(' ', 'T');
+                                                            const date = new Date(validDateStr);
+                                                            if (isNaN(date.getTime())) return "N/A";
+                                                            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                                        } catch (e) {
+                                                            return "N/A";
+                                                        }
+                                                    })()}
                                                 </td>
                                             </tr>
                                         ))}
@@ -288,7 +370,7 @@ export default function Dashboard() {
                                             <span className="text-xs font-bold text-[#0F4C81] bg-[#0F4C81]/10 px-2 py-0.5 rounded-full">{cat.count}</span>
                                         </div>
                                         <div className="flex justify-between text-xs text-slate-500 mt-2">
-                                            <span>{cat.avg_ai_time.toFixed(0)}ms avg</span>
+                                            <span>{(cat.avg_ai_time || 0).toFixed(0)}ms avg</span>
                                             <span className={cat.accuracy >= 90 ? "text-green-600" : "text-yellow-600"}>
                                                 {cat.accuracy}% acc
                                             </span>
@@ -388,7 +470,12 @@ function SimpleLineChart({ data }: { data: HourlyTrend[] }) {
                     <div key={i} className="flex-1 flex flex-col items-center group relative">
                         {/* Tooltip */}
                         <div className="absolute bottom-full mb-2 hidden group-hover:block z-10 bg-slate-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                            {d.queryVolume} queries at {new Date(d.time).getHours()}:00
+                            {d.queryVolume} queries at {(() => {
+                                try {
+                                    const date = new Date((d.time || "").replace(' ', 'T'));
+                                    return isNaN(date.getTime()) ? "?" : date.getHours();
+                                } catch { return "?"; }
+                            })()}:00
                         </div>
                         {/* Bar (simulating line point for MVP) */}
                         <div
@@ -400,7 +487,12 @@ function SimpleLineChart({ data }: { data: HourlyTrend[] }) {
                         {/* X Axis Label */}
                         {i % 3 === 0 && (
                             <div className="text-[10px] text-slate-400 mt-1">
-                                {new Date(d.time).getHours()}h
+                                {(() => {
+                                    try {
+                                        const date = new Date((d.time || "").replace(' ', 'T'));
+                                        return isNaN(date.getTime()) ? "" : `${date.getHours()}h`;
+                                    } catch { return ""; }
+                                })()}
                             </div>
                         )}
                     </div>

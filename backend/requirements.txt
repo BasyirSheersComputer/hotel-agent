@@ -25,3 +25,4 @@ alembic
 google-cloud-secret-manager
 gunicorn
 redis
+email-validator

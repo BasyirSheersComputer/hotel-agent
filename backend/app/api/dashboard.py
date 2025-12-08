@@ -40,6 +40,16 @@ class MetricsSummary(BaseModel):
     estimated_cost: float
     rate_limit_status: str
     cost_breakdown: str
+    
+    # New ROI Metrics
+    avg_sentiment: float
+    avg_csat: float
+    booking_leads: int
+    upsell_opportunities: int
+    total_revenue_potential: float
+    sop_compliance_rate: float
+    fcr_rate: float
+    booking_conversion_rate: float
 
 class CategoryMetric(BaseModel):
     """Question category metric"""

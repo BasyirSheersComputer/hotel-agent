@@ -173,6 +173,23 @@ class Query(Base):
     cost_estimate = Column(DECIMAL(10, 6), default=0.0)
     accuracy_score = Column(DECIMAL(3, 2), default=0.0)
     aht_saved_s = Column(Integer, default=0)
+    
+    # Efficiency Quadrant
+    hold_time_ms = Column(Integer, default=0)
+    escalation_needed = Column(Boolean, default=False)
+    
+    # Accuracy & Quality Quadrant
+    is_sop_compliant = Column(Boolean, default=True)
+    correct_on_first_try = Column(Boolean, default=True)
+    
+    # Revenue Quadrant
+    booking_intent = Column(Boolean, default=False)
+    upsell_intent = Column(Boolean, default=False)
+    revenue_potential = Column(DECIMAL(10, 2), default=0.00)
+    
+    # CSAT Quadrant
+    sentiment_score = Column(DECIMAL(3, 2), default=0.0) # -1.0 to 1.0
+    csat_rating = Column(Integer, default=5) # 1-5
 
 class KBEmbedding(Base):
     """
