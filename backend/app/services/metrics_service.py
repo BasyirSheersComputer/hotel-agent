@@ -20,6 +20,17 @@ class MetricsService:
     def __init__(self):
         # Database initialization is now handled by Main App / Alembic
         pass
+
+    def _apply_time_filter(self, query, hours: int = 24, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None):
+        """Helper to apply time filters to a query"""
+        if start_date:
+            query = query.filter(Query.timestamp >= start_date)
+            if end_date:
+                query = query.filter(Query.timestamp <= end_date)
+        else:
+            cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+            query = query.filter(Query.timestamp > cutoff_time)
+        return query
     
     def log_query(
         self,
@@ -122,13 +133,12 @@ class MetricsService:
         finally:
             session.close()
 
-    def get_summary_metrics(self, hours: int = 24, org_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_summary_metrics(self, hours: int = 24, org_id: Optional[str] = None, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> Dict[str, Any]:
         """Get summary metrics for dashboard"""
         session = SessionLocal()
         try:
-            cutoff_time = datetime.utcnow() - timedelta(hours=hours)
-            
-            base_query = session.query(Query).filter(Query.timestamp > cutoff_time)
+            base_query = session.query(Query)
+            base_query = self._apply_time_filter(base_query, hours, start_date, end_date)
             if org_id:
                 base_query = base_query.filter(Query.org_id == org_id)
                 
@@ -227,17 +237,17 @@ class MetricsService:
         finally:
             session.close()
 
-    def get_question_categories(self, hours: int = 24, org_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_question_categories(self, hours: int = 24, org_id: Optional[str] = None, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> List[Dict[str, Any]]:
         """Get breakdown of questions by category"""
         session = SessionLocal()
         try:
-            cutoff_time = datetime.utcnow() - timedelta(hours=hours)
             query = session.query(
                 func.coalesce(Query.question_category, 'Uncategorized').label("category"),
                 func.count(Query.id).label("count"),
                 func.avg(Query.response_time_ms).label("avg_time"),
                 func.avg(Query.accuracy_score).label("accuracy")
-            ).filter(Query.timestamp > cutoff_time)
+            )
+            query = self._apply_time_filter(query, hours, start_date, end_date)
             
             if org_id:
                 query = query.filter(Query.org_id == org_id)
@@ -255,12 +265,10 @@ class MetricsService:
         finally:
             session.close()
 
-    def get_hourly_trends(self, hours: int = 24, org_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_hourly_trends(self, hours: int = 24, org_id: Optional[str] = None, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> List[Dict[str, Any]]:
         """Get hourly query trends"""
         session = SessionLocal()
         try:
-            cutoff_time = datetime.utcnow() - timedelta(hours=hours)
-            
             # Using date_trunc/strftime depending on dialect is tricky in pure SQL
             # But SQLAlchemy func.date_trunc works for Postgres.
             # For SQLite: func.strftime('%Y-%m-%d %H:00:00', Query.timestamp)
@@ -277,7 +285,8 @@ class MetricsService:
                 func.count(Query.id).label("count"),
                 func.avg(Query.response_time_ms).label("avg_time"),
                 func.avg(case((Query.success == True, 100.0), else_=0.0)).label("success_rate")
-            ).filter(Query.timestamp > cutoff_time)
+            )
+            query = self._apply_time_filter(query, hours, start_date, end_date)
 
             if org_id:
                 query = query.filter(Query.org_id == org_id)
@@ -295,19 +304,18 @@ class MetricsService:
         finally:
             session.close()
 
-    def get_agent_performance(self, hours: int = 24, org_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_agent_performance(self, hours: int = 24, org_id: Optional[str] = None, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> List[Dict[str, Any]]:
         """Get performance metrics per agent"""
         session = SessionLocal()
         try:
-            cutoff_time = datetime.utcnow() - timedelta(hours=hours)
-            
             query = session.query(
                 Query.agent_id,
                 func.count(Query.id).label("count"),
                 func.avg(Query.response_time_ms).label("avg_time"),
                 func.avg(Query.accuracy_score).label("accuracy"),
                 func.max(Query.timestamp).label("last_active")
-            ).filter(Query.timestamp > cutoff_time)
+            )
+            query = self._apply_time_filter(query, hours, start_date, end_date)
             
             if org_id:
                 query = query.filter(Query.org_id == org_id)
@@ -326,16 +334,15 @@ class MetricsService:
         finally:
             session.close()
 
-    def get_source_distribution(self, hours: int = 24, org_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_source_distribution(self, hours: int = 24, org_id: Optional[str] = None, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> List[Dict[str, Any]]:
         """Get source distribution"""
         session = SessionLocal()
         try:
-            cutoff_time = datetime.utcnow() - timedelta(hours=hours)
-            
             query = session.query(
                 func.coalesce(Query.source_type, 'Unknown').label("source"),
                 func.count(Query.id).label("count")
-            ).filter(Query.timestamp > cutoff_time)
+            )
+            query = self._apply_time_filter(query, hours, start_date, end_date)
             
             if org_id:
                 query = query.filter(Query.org_id == org_id)
@@ -353,6 +360,163 @@ class MetricsService:
             ]
         finally:
             session.close()
+
+    def generate_report_data(self, hours: int = 24, org_id: Optional[str] = None, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> Dict[str, Any]:
+        """Calculates all financial and operational metrics for reports"""
+        session = SessionLocal()
+        try:
+            query = session.query(Query)
+            query = self._apply_time_filter(query, hours, start_date, end_date)
+            
+            if org_id:
+                query = query.filter(Query.org_id == org_id)
+                
+            results = query.order_by(desc(Query.timestamp)).all()
+            
+            # --- Financial Calculations ---
+            total_queries = len(results)
+            total_revenue_potential = float(sum(r.revenue_potential or 0 for r in results))
+            booking_leads = sum(1 for r in results if r.booking_intent)
+            upsell_ops = sum(1 for r in results if r.upsell_intent)
+            
+            # Labor Savings (AHT)
+            total_aht_saved_seconds = sum(r.aht_saved_s or 0 for r in results)
+            total_aht_saved_hours = float(total_aht_saved_seconds) / 3600.0
+            avg_hourly_wage = 25.00
+            labor_savings_value = total_aht_saved_hours * avg_hourly_wage
+            fte_equivalent = total_aht_saved_hours / 160.0
+            
+            # Costs
+            total_token_cost = float(sum(r.cost_estimate or 0 for r in results))
+            platform_fee_est = 50.00
+            infrastructure_cost = platform_fee_est * (hours / 24.0)
+            total_cost = total_token_cost + infrastructure_cost
+            
+            # Net Benefit
+            total_value_created = total_revenue_potential + labor_savings_value
+            net_benefit = total_value_created - total_cost
+            roi_multiplier = (total_value_created / total_cost) if total_cost > 0 else 0
+            
+            success_rate = (sum(1 for r in results if r.success) / total_queries * 100) if total_queries else 0
+            avg_response = sum(r.response_time_ms or 0 for r in results) / total_queries if total_queries else 0
+            
+            avg_csat = sum(r.csat_rating or 0 for r in results) / total_queries if total_queries else 0
+            avg_sentiment = sum(r.sentiment_score or 0 for r in results) / total_queries if total_queries else 0
+            sop_compliance = (sum(1 for r in results if r.is_sop_compliant) / total_queries * 100) if total_queries else 0
+
+            return {
+                "results": results, # Raw data for detailed logs
+                "total_queries": total_queries,
+                "total_revenue_potential": total_revenue_potential,
+                "booking_leads": booking_leads,
+                "upsell_opportunities": upsell_ops,
+                "total_aht_saved_hours": total_aht_saved_hours,
+                "labor_savings_value": labor_savings_value,
+                "fte_equivalent": fte_equivalent,
+                "avg_hourly_wage": avg_hourly_wage,
+                "total_token_cost": total_token_cost,
+                "infrastructure_cost": infrastructure_cost,
+                "total_cost": total_cost,
+                "total_value_created": total_value_created,
+                "net_benefit": net_benefit,
+                "roi_multiplier": roi_multiplier,
+                "success_rate": success_rate,
+                "avg_response_time_ms": avg_response,
+                "avg_csat": avg_csat,
+                "avg_sentiment": avg_sentiment,
+                "sop_compliance_rate": sop_compliance
+            }
+        finally:
+            session.close()
+
+    def generate_csv_report(self, hours: int = 24, org_id: Optional[str] = None, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> str:
+        """Generate a CFO-grade Financial Report (CSV)"""
+        import csv
+        import io
+        
+        data = self.generate_report_data(hours, org_id, start_date, end_date)
+        results = data['results'] # Extract raw results
+        
+        # explicit newline='' to prevent auto-translation, and force CRLF for Excel
+        output = io.StringIO(newline='')
+        writer = csv.writer(output, lineterminator='\r\n')
+        
+        # 1. Report Header
+        writer.writerow(["RESORT GENIUS - AI PERFORMANCE & FINANCIAL REPORT"])
+        writer.writerow(["Generated On", datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+        writer.writerow(["Period Filters", f"Start: {start_date or 'N/A'}, End: {end_date or 'N/A'}, Hours: {hours}"])
+        writer.writerow([])
+        
+        # 2. Executive Summary
+        writer.writerow(["--- EXECUTIVE FINANCIAL SUMMARY ---"])
+        writer.writerow(["Metric", "Value", "Notes"])
+        writer.writerow(["Total Value Created", f"${data['total_value_created']:,.2f}", "Revenue Potential + Labor Savings"])
+        writer.writerow(["Net Benefit", f"${data['net_benefit']:,.2f}", "Total Value - AI Costs"])
+        writer.writerow(["ROI Multiplier", f"{data['roi_multiplier']:.1f}x", "For every $1 spent on AI, $X is returned"])
+        writer.writerow([])
+        
+        # 3. Operational Impact
+        writer.writerow(["--- OPERATIONAL EFFICIENCY ---"])
+        writer.writerow(["Total Queries Handled", data['total_queries'], "Volume"])
+        writer.writerow(["Labor Hours Saved", f"{data['total_aht_saved_hours']:,.1f} hrs", "vs Manual Handling (5min avg)"])
+        writer.writerow(["FTE Reallocation Value", f"{data['fte_equivalent']:.2f} FTEs", "Equivalent Full-Time Employees"])
+        writer.writerow(["Est. Labor Cost Savings", f"${data['labor_savings_value']:,.2f}", f"@ ${data['avg_hourly_wage']}/hr"])
+        writer.writerow([])
+        
+        # 4. Revenue Impact
+        writer.writerow(["--- REVENUE GENERATION ---"])
+        writer.writerow(["Total Revenue Potential", f"${data['total_revenue_potential']:,.2f}", "From Bookings & Upsells"])
+        writer.writerow(["Booking Leads", data['booking_leads'], "High Intent"])
+        writer.writerow(["Upsell Opportunities", data['upsell_opportunities'], "Upgrade Intent"])
+        writer.writerow([])
+        
+        # 5. Cost Analysis
+        writer.writerow(["--- COST BREAKDOWN ---"])
+        writer.writerow(["AI Compute Costs", f"${data['total_token_cost']:,.2f}", "LLM Tokens"])
+        writer.writerow(["Infrastructure Est.", f"${data['infrastructure_cost']:,.2f}", "Server/Hosting"])
+        writer.writerow(["Total System Cost", f"${data['total_cost']:,.2f}", ""])
+        writer.writerow([])
+        writer.writerow([])
+        
+        # 6. Detailed Logs
+        writer.writerow(["--- DETAILED TRANSACTION LOGS ---"])
+        writer.writerow([
+            "Timestamp", "Agent ID", "Category", "Query Preview", "Response Time (ms)", 
+            "Tokens", "Cost ($)", "Accuracy",
+            "Hold Time (ms)", "SOP Compliant", "Revenue Potential ($)", "Booking Intent", "CSAT"
+        ])
+        
+        for r in results[:5000]:
+            writer.writerow([
+                r.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                r.agent_id,
+                r.question_category or "N/A",
+                r.query_text[:50].replace('\n', ' ') + "..." if r.query_text else "",
+                r.response_time_ms,
+                r.tokens_used,
+                f"{r.cost_estimate:.4f}",
+                f"{r.accuracy_score:.2f}",
+                r.hold_time_ms,
+                "Yes" if r.is_sop_compliant else "No",
+                f"{r.revenue_potential:.2f}",
+                "Yes" if r.booking_intent else "No",
+                r.csat_rating
+            ])
+            
+        return output.getvalue()
+
+    def generate_pdf_report(self, hours: int = 24, org_id: Optional[str] = None, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> bytes:
+        """Generate a PDF Report"""
+        from app.services.pdf_report_service import PDFReportGenerator
+        
+        data = self.generate_report_data(hours, org_id, start_date, end_date)
+        generator = PDFReportGenerator()
+        
+        # Pass start/end strings for display if available, else None
+        s_date_str = start_date.strftime("%Y-%m-%d") if start_date else None
+        e_date_str = end_date.strftime("%Y-%m-%d") if end_date else None
+        
+        return generator.generate_pdf(data, start_date=s_date_str, end_date=e_date_str, hours=hours)
 
 # Global instance
 _metrics_service = None

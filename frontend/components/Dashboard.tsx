@@ -114,6 +114,9 @@ export default function Dashboard() {
 
 function DashboardContent() {
     const [timeRange, setTimeRange] = useState<number>(24);
+    const [viewMode, setViewMode] = useState<'preset' | 'custom'>('preset');
+    const [customDates, setCustomDates] = useState<{ start: string; end: string }>({ start: "", end: "" });
+
     const [summary, setSummary] = useState<MetricsSummary | null>(null);
     const [categories, setCategories] = useState<CategoryMetric[]>([]);
     const [trends, setTrends] = useState<HourlyTrend[]>([]);
@@ -125,12 +128,17 @@ function DashboardContent() {
         setLoading(true);
         setError(null);
         try {
+            let query = `?hours=${timeRange}`;
+            if (viewMode === 'custom' && customDates.start && customDates.end) {
+                query = `?start_date=${customDates.start}T00:00:00&end_date=${customDates.end}T23:59:59`;
+            }
+
             const [summaryRes, categoriesRes, trendsRes, agentsRes] =
                 await Promise.all([
-                    fetch(`${API_BASE}/api/metrics/summary?hours=${timeRange}`),
-                    fetch(`${API_BASE}/api/metrics/categories?hours=${timeRange}`),
-                    fetch(`${API_BASE}/api/metrics/trends?hours=${timeRange}`),
-                    fetch(`${API_BASE}/api/metrics/agents?hours=${timeRange}`),
+                    fetch(`${API_BASE}/api/metrics/summary${query}`),
+                    fetch(`${API_BASE}/api/metrics/categories${query}`),
+                    fetch(`${API_BASE}/api/metrics/trends${query}`),
+                    fetch(`${API_BASE}/api/metrics/agents${query}`),
                 ]);
 
             if (!summaryRes.ok) throw new Error("Failed to fetch summary metrics");
@@ -148,10 +156,23 @@ function DashboardContent() {
     };
 
     useEffect(() => {
+        if (viewMode === 'custom' && (!customDates.start || !customDates.end)) return;
         fetchMetrics();
-        const interval = setInterval(fetchMetrics, 5000); // 5s Refresh for real-time feel
+        const interval = setInterval(fetchMetrics, 10000); // Slower refresh for chunks
         return () => clearInterval(interval);
-    }, [timeRange]);
+    }, [timeRange, viewMode, customDates]);
+
+    const downloadReport = () => {
+        let query = `?hours=${timeRange}`;
+        if (viewMode === 'custom' && customDates.start && customDates.end) {
+            query = `?start_date=${customDates.start}T00:00:00&end_date=${customDates.end}T23:59:59`;
+        }
+
+        // Use direct navigation to trigger browser download handler
+        // This avoids client-side Blob issues and plays better with browser security
+        const url = `${API_BASE}/api/reports/export${query}`;
+        window.open(url, '_blank');
+    };
 
     if (loading && !summary) {
         return (
@@ -178,24 +199,79 @@ function DashboardContent() {
             <div className="w-full max-w-[1400px] h-[100dvh] md:h-[90vh] bg-white/85 backdrop-blur-[20px] rounded-none md:rounded-[24px] shadow-[0_8px_30px_rgba(0,0,0,0.05)] border-0 md:border border-white/40 overflow-hidden flex flex-col relative font-sans text-slate-800 transition-all duration-300">
 
                 {/* Header with Consistent Padding */}
-                <div className="w-full flex justify-between items-center p-6 md:p-8 border-b border-black/5 bg-white/50">
+                <div className="w-full flex flex-col md:flex-row justify-between items-center p-6 md:p-8 border-b border-black/5 bg-white/50 gap-4">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#0F4C81]">Analytics Dashboard</h1>
                         <p className="text-slate-500 text-sm mt-1">CFO ROI Metrics & Performance</p>
                     </div>
-                    <div className="flex gap-2 bg-white p-1 rounded-lg border border-black/5 shadow-sm">
-                        {[24, 48, 168].map((hours) => (
+
+                    <div className="flex flex-col md:flex-row gap-3 items-center">
+                        {/* Period Selector */}
+                        <div className="flex gap-1 bg-white p-1 rounded-lg border border-black/5 shadow-sm">
+                            {[24, 48, 168, 720].map((hours) => (
+                                <button
+                                    key={hours}
+                                    onClick={() => { setTimeRange(hours); setViewMode('preset'); }}
+                                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${timeRange === hours && viewMode === 'preset'
+                                        ? "bg-[#0F4C81] text-white shadow-sm"
+                                        : "text-slate-600 hover:bg-slate-50"
+                                        }`}
+                                >
+                                    {hours === 24 ? "Today" : hours === 48 ? "48h" : hours === 168 ? "7d" : "30d"}
+                                </button>
+                            ))}
                             <button
-                                key={hours}
-                                onClick={() => setTimeRange(hours)}
-                                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${timeRange === hours
+                                onClick={() => setViewMode('custom')}
+                                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'custom'
                                     ? "bg-[#0F4C81] text-white shadow-sm"
                                     : "text-slate-600 hover:bg-slate-50"
                                     }`}
                             >
-                                {hours === 24 ? "Today" : hours === 48 ? "48h" : "7d"}
+                                Custom
                             </button>
-                        ))}
+                        </div>
+
+                        {/* Custom Date Inputs */}
+                        {viewMode === 'custom' && (
+                            <div className="flex gap-2 items-center bg-white p-1 rounded-lg border border-black/5 shadow-sm">
+                                <input
+                                    type="date"
+                                    className="text-sm border-none focus:ring-0 text-slate-600 bg-transparent"
+                                    onChange={(e) => setCustomDates(prev => ({ ...prev, start: e.target.value }))}
+                                />
+                                <span className="text-slate-300">-</span>
+                                <input
+                                    type="date"
+                                    className="text-sm border-none focus:ring-0 text-slate-600 bg-transparent"
+                                    onChange={(e) => setCustomDates(prev => ({ ...prev, end: e.target.value }))}
+                                />
+                            </div>
+                        )}
+
+                        {/* Export Button */}
+                        {/* Export Buttons */}
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => {
+                                    let query = `?hours=${timeRange}`;
+                                    if (viewMode === 'custom' && customDates.start && customDates.end) {
+                                        query = `?start_date=${customDates.start}T00:00:00&end_date=${customDates.end}T23:59:59`;
+                                    }
+                                    const url = `${API_BASE}/api/reports/export-pdf${query}`;
+                                    window.open(url, '_blank');
+                                }}
+                                className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+                                title="Download PDF Report"
+                            >
+                                <span>📄</span> PDF
+                            </button>
+                            <button
+                                onClick={downloadReport}
+                                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+                            >
+                                <span>📥</span> Export CSV
+                            </button>
+                        </div>
                     </div>
                 </div>
 
