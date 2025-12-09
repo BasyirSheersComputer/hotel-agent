@@ -4,12 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import LanguageSelector from "./LanguageSelector";
 
-// API URL from environment - defaults to cloud backend
 // API URL from environment - smart default for local dev
-const API_URL = process.env.NEXT_PUBLIC_API_URL ||
-    (typeof window !== 'undefined' && window.location.hostname === 'localhost'
-        ? "http://localhost:8000"
-        : "https://hotel-agent-backend-319072304914.us-central1.run.app");
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
 // Language storage key
 const LANGUAGE_STORAGE_KEY = "resort_genius_language";
@@ -27,8 +23,6 @@ interface ChatSession {
     title: string;
     updated_at: string;
 }
-
-
 
 interface ChatInterfaceProps {
     user?: {
@@ -496,9 +490,3 @@ function HistoryDrawer({ isOpen, onClose, sessions, currentSessionId, onLoadSess
         </div>
     );
 }
-
-
-
-
-
-

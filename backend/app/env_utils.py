@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from google.cloud import secretmanager
 import warnings
 
-SECRET_RESOURCE_ID = "projects/319072304914/secrets/hotel-agent-secret-001/versions/latest"
+SECRET_RESOURCE_ID = "projects/club-med-agent/secrets/hotel-agent-secret-001/versions/latest"
 
 def load_gcp_secrets():
     """

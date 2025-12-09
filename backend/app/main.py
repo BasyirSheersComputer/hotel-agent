@@ -36,6 +36,8 @@ if not os.getenv("GOOGLE_MAPS_API_KEY"):
     print("WARNING: GOOGLE_MAPS_API_KEY not found. Location services will fail.")
 
 # Create FastAPI app
+# Create FastAPI app
+# Trigger Reload 2
 app = FastAPI(
     title="Resort Genius API",
     description="Multi-tenant AI concierge for hotels and resorts",
@@ -94,7 +96,13 @@ if ENABLE_DASHBOARD:
 app.include_router(admin.router)
 
 # History endpoints
+# History endpoints
 app.include_router(history.router)
+
+# Subscription endpoints
+from app.api import subscriptions
+app.include_router(subscriptions.router)
+app.include_router(subscriptions.webhook_router)
 
 # =============================================================================
 # ROOT ENDPOINTS

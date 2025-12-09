@@ -11,7 +11,7 @@
 import React, { useState, useEffect } from "react";
 
 // API Base URL
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
 // Types matching new API response
 interface MetricsSummary {
@@ -113,6 +113,18 @@ export default function Dashboard() {
 }
 
 function DashboardContent() {
+    const [showSuccess, setShowSuccess] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('billing') === 'success') {
+                setShowSuccess(true);
+                window.history.replaceState({}, '', '/dashboard');
+            }
+        }
+    }, []);
+
     const [timeRange, setTimeRange] = useState<number>(24);
     const [viewMode, setViewMode] = useState<'preset' | 'custom'>('preset');
     const [customDates, setCustomDates] = useState<{ start: string; end: string }>({ start: "", end: "" });
@@ -248,7 +260,14 @@ function DashboardContent() {
                             </div>
                         )}
 
-                        {/* Export Button */}
+                        {/* Billing Button */}
+                        <button
+                            onClick={() => window.location.href = '/billing'}
+                            className="flex items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+                        >
+                            <span>💳</span> Subscription
+                        </button>
+
                         {/* Export Buttons */}
                         <div className="flex gap-2">
                             <button
@@ -458,6 +477,43 @@ function DashboardContent() {
                     </div>
                 </div>
             </div>
+
+            {/* Success Modal */}
+            {showSuccess && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center border-t-4 border-green-500 relative animate-in zoom-in-95 duration-300">
+                        <button
+                            onClick={() => setShowSuccess(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                        >
+                            ✕
+                        </button>
+                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <span className="text-3xl">🛡️</span>
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">System Secured!</h2>
+                        <p className="text-gray-600 mb-6">
+                            Your <strong>Annual License</strong> is active. The Revenue Defense System is now fully operational.
+                        </p>
+                        <div className="bg-slate-50 rounded-lg p-4 mb-6 text-left text-sm text-slate-700">
+                            <div className="flex justify-between mb-2">
+                                <span>Status:</span>
+                                <span className="font-bold text-green-600">ACTIVE</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Plan:</span>
+                                <span className="font-medium">Resort Genius Core</span>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setShowSuccess(false)}
+                            className="w-full py-3 bg-[#0F4C81] hover:bg-[#1A5F9A] text-white font-bold rounded-lg transition-colors"
+                        >
+                            Access Dashboard
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

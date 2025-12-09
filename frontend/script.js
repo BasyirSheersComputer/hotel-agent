@@ -1,7 +1,7 @@
 // API Configuration
 const API_BASE_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:8000'
-    : (window.API_URL || 'https://hotel-agent-backend-319072304914.us-central1.run.app');
+    : (window.API_URL || 'https://hotel-agent-backend-club-med-agent.us-central1.run.app');
 
 document.addEventListener('DOMContentLoaded', () => {
     const chatMessages = document.getElementById('chat-messages');

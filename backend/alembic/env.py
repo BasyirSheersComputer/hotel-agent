@@ -17,7 +17,7 @@ load_dotenv()
 
 # Import the application's models
 from app.models import Base
-from app.config.settings import DATABASE_URL
+from app.database import DATABASE_URL
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

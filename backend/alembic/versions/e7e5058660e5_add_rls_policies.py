@@ -19,6 +19,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # Check dialect
+    bind = op.get_bind()
+    if bind.engine.name == "sqlite":
+        print("Skipping RLS policies for SQLite")
+        return
+
     # 1. Enable RLS on core tables
     op.execute("ALTER TABLE users ENABLE ROW LEVEL SECURITY")
     op.execute("ALTER TABLE organizations ENABLE ROW LEVEL SECURITY")

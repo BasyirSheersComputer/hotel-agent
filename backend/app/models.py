@@ -64,6 +64,11 @@ class Organization(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     settings = Column(JSON, default={})
     
+    # Billing / Stripe
+    stripe_customer_id = Column(String(255), unique=True, nullable=True)
+    subscription_status = Column(String(50), default="free") # free, active, past_due, canceled
+    current_period_end = Column(DateTime(timezone=True), nullable=True)
+    
     # Relationships
     users = relationship("User", back_populates="organization", cascade="all, delete-orphan")
     sessions = relationship("ChatSession", back_populates="organization", cascade="all, delete-orphan")
