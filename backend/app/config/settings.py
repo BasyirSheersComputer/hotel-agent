@@ -7,7 +7,13 @@ from typing import Optional
 import uuid
 
 # =============================================================================
+# LOGGING CONFIGURATION
+# =============================================================================
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+# =============================================================================
 # DEMO MODE CONFIGURATION
+
 # =============================================================================
 # When DEMO_MODE is True:
 # - Authentication is bypassed (all requests treated as demo user)

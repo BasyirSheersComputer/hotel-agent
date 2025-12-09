@@ -24,7 +24,7 @@ class StructLogMiddleware(BaseHTTPMiddleware):
         start_time = time.time()
         
         # Log Request Start
-        await logger.info(
+        logger.info(
             "request_started",
             method=request.method,
             path=request.url.path,
@@ -40,7 +40,7 @@ class StructLogMiddleware(BaseHTTPMiddleware):
         except Exception as e:
             # Log Exception
             process_time = time.time() - start_time
-            await logger.error(
+            logger.error(
                 "request_failed",
                 error=str(e),
                 duration=process_time,
@@ -56,7 +56,7 @@ class StructLogMiddleware(BaseHTTPMiddleware):
         org_id = getattr(request.state, "org_id", None)
         user_id = getattr(request.state, "user_id", None)
         
-        await logger.info(
+        logger.info(
             "request_finished",
             method=request.method,
             path=request.url.path,

@@ -206,10 +206,35 @@ async def query_rag(query_text: str, org_id: str = None):
         )
         
         if not os.path.exists(CHROMA_PATH):
-            return {
-                "answer": "System Error: Vector DB missing.",
-                "sources": ["System Error"]
-            }
+            print("Vector DB missing. Attempting to auto-initialize...")
+            try:
+                # Run population script
+                import subprocess
+                # Get absolute path to populate_db.py (sibling of this file's parent's parent...)
+                # Current file: backend/app/services/retrieval.py
+                # Target: backend/populate_db.py
+                backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                script_path = os.path.join(backend_dir, "populate_db.py")
+                
+                # Check if script exists
+                if os.path.exists(script_path):
+                    # Blocking call wrapped in executor
+                    def run_population():
+                        subprocess.run([sys.executable, script_path], check=True)
+                        
+                    await run_sync_in_executor(run_population)
+                    print("Vector DB initialized successfully.")
+                else:
+                    return {
+                        "answer": f"System Error: Vector DB missing and population script not found at {script_path}.",
+                        "sources": ["System Error"]
+                    }
+            except Exception as e:
+                print(f"Failed to auto-initialize Vector DB: {e}")
+                return {
+                    "answer": "System Error: Vector DB missing and auto-initialization failed.",
+                    "sources": ["System Error"]
+                }
         
         collection_name = get_collection_name(org_id)
         
