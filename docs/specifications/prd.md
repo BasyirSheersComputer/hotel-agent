@@ -1,9 +1,9 @@
 # Product Requirements Document (PRD)
 ## Resort Genius - AI Agent Assist for Hospitality
 
-**Version**: 2.0 (Final)  
+**Version**: 2.1 (Enhanced)  
 **Status**: Production Ready  
-**Date**: December 6 2025  
+**Date**: December 10 2025  
 **Product Owner**: Ahmad Basyir Bin Azahari
 
 ---
@@ -67,6 +67,12 @@
 - **FR-14**: Markdown rendering for structured responses (Bold, Bullets, Headings).
 - **FR-15**: Mobile-responsive design for tablet usage.
 - **FR-16**: Clear visual distinction between User and AI messages.
+
+### 3.5 Advanced Analytics & Reporting
+*Deep insights for management.*
+- **FR-17**: Dual-axis trending charts (Volume vs Response Time) with dynamic granularity (Hourly/Daily).
+- **FR-18**: Robust data filling ("Zero-Fill") to ensure continuous timelines even with sparse data.
+- **FR-19**: Comprehensive date filtering (Today, 48h, 7d, 30d, Custom Range).
 
 ---
 
@@ -136,6 +142,7 @@
 - [x] Executive Reporting (PDF/CSV).
 - [x] Multi-language support (50+ languages).
 - [x] Persistent Chat History (Session-based).
+- [x] **Enhanced Visualizations** (Dual-Axis, Zero-Fill, Dynamic Aggregation).
 
 ### Phase 4: SaaS Scale-Up (Next)
 - [ ] User Authentication (SSO).
