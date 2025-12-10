@@ -163,11 +163,23 @@ def require_role(allowed_roles: list[str]):
     return role_checker
 
 
+def require_super_admin():
+    """Shorthand for requiring Super Admin role. (System Owner)"""
+    return require_role(["super_admin"])
+
+def require_tenant_admin():
+    """Shorthand for requiring Tenant Admin role. (Org Owner)"""
+    return require_role(["super_admin", "tenant_admin", "admin"]) # 'admin' for backward compat
+
+def require_property_manager():
+    """Shorthand for Property Manager."""
+    return require_role(["super_admin", "tenant_admin", "admin", "property_manager"])
+
 def require_admin():
-    """Shorthand for requiring admin role."""
-    return require_role(["admin"])
+    """Deprecated: Use require_tenant_admin. Kept for backward compat."""
+    return require_tenant_admin()
 
 
 def require_agent_or_admin():
-    """Shorthand for requiring agent or admin role."""
-    return require_role(["admin", "agent"])
+    """Shorthand for requiring agent or higher."""
+    return require_role(["super_admin", "tenant_admin", "admin", "property_manager", "agent"])

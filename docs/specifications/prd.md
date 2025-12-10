@@ -1,8 +1,8 @@
 # Product Requirements Document (PRD)
 ## Resort Genius - AI Agent Assist for Hospitality
 
-**Version**: 2.1 (Enhanced)  
-**Status**: Production Ready  
+**Version**: 3.0 (SaaS Platform Expansion)  
+**Status**: In Development  
 **Date**: December 10 2025  
 **Product Owner**: Ahmad Basyir Bin Azahari
 
@@ -12,156 +12,106 @@
 
 **Product Name**: Resort Genius  
 **Tagline**: Turn every agent into your best agent.  
-**Problem**: Hotel call center agents spend 40% of their time searching for information across scattered sources (PDFs, manuals, websites), leading to long hold times (8+ mins), inconsistent answers, and high training costs.  
-**Solution**: An AI-powered agent assist dashboard that delivers instant, accurate answers to any guest inquiry in <3 seconds by combining internal knowledge with real-time external data.
+**Problem**: Hotel call center agents spend 40% of their time searching for information while hoteliers struggle with high training costs and inconsistent service quality.  
+**Solution**: An AI-powered agent assist dashboard that delivers instant, accurate answers combined with a comprehensive SaaS platform for multi-property management, automated billing, and detailed analytics.
 
 ### Key Metrics (Success Criteria)
 - **Response Time**: <3 seconds per query
 - **Accuracy**: >95% with source attribution
 - **Adoption**: >90% of agents using daily
 - **Efficiency**: 30% reduction in Average Handle Time (AHT)
+- **SaaS Viability**: Fully automated onboarding and billing flow via Stripe.
 
 ---
 
-## 2. User Personas
+## 2. User Personas & RBAC
 
-### Primary: The Call Center Agent (Sarah)
-- **Role**: Handles 50+ calls/day, multitasking heavily.
-- **Pain Points**: Can't find info quickly, hates putting guests on hold, stressed by complex questions.
-- **Needs**: Instant answers, "type & forget" UI, trust in the data.
+### 2.1 Roles & Responsibilities
 
-### Secondary: The Operations Manager (David)
-- **Role**: Oversees agent performance and training.
-- **Pain Points**: High turnover, long training times, inconsistent brand voice.
-- **Needs**: Easy onboarding, consistent answers, analytics on query trends.
+| Role | Access Level | Description | Example |
+| :--- | :--- | :--- | :--- |
+| **Super Admin** | System-Wide | Management of all tenants, billing oversight, system health monitoring. | **SaaS Provider (Us)** |
+| **Tenant Admin** | Organization | Full control over the Organization (Tenant), subscription, and all properties. | **Club Med HQ** |
+| **Property Manager** | Property | Management of a specific hotel's KB, agents, and analytics. | **Manager @ Cherating** |
+| **Agent** | Property | Read-only access to Chat and basic personal history. | **Front Desk Staff** |
+| **Viewer** | Property | Read-only access to Analytics (e.g., for investors/analysts). | **External Auditor** |
 
 ---
 
 ## 3. Core Features & Functional Requirements
 
-### 3.1 Hybrid Intelligence Engine
+### 3.1 Hybrid Intelligence Engine (Existing)
 *The brain of the system.*
-- **FR-01**: System must answer questions based on internal documents (PDFs, text).
-- **FR-02**: System must answer location-based questions using Google Maps API.
-- **FR-03**: System must intelligently route queries between Internal vs. External sources.
-  - *Logic*: "Pool" = Internal; "Hospital" = External.
-- **FR-04**: System must provide source attribution for every answer.
+- **FR-01**: RAG-based answer generation from internal KBs.
+- **FR-02**: Google Maps integration for external queries.
+- **FR-03**: Intelligent routing and source attribution.
 
-### 3.2 Smart Knowledge Retrieval (RAG)
-*Handling property-specific data.*
-- **FR-05**: Ingest and index unstructured text data (Chunk size: 500 chars).
-- **FR-06**: Semantic search using vector embeddings (OpenAI text-embedding-3-small).
-- **FR-07**: Retrieve top 3-5 relevant chunks for context.
-- **FR-08**: Generate natural language response using GPT-4o.
+### 3.2 SaaS Controller (Super Admin)
+*System-wide oversight.*
+- **FR-20**: **Tenant Overview**: List all tenants with status (Active/Trial/Churned), plan, and usage metrics.
+- **FR-21**: **Global Analytics**: Aggregate query volume, token usage, and error rates across the platform.
+- **FR-22**: **System Health**: Monitor API latency and service up-time.
 
-### 3.3 Location Services Integration
-*Handling external world data.*
-- **FR-09**: Detect location intent keywords ("nearest", "nearby", "distance").
-- **FR-10**: Identify place types (hospital, pharmacy, ATM, mall).
-- **FR-11**: Calculate real-time Haversine distance from hotel coordinates.
-- **FR-12**: Display results with Name, Distance, Rating, and Status (Open/Closed).
+### 3.3 Multi-Property Management
+*One Tenant, Many Hotels.*
+- **FR-23**: **Hierarchy**: `Tenant (Club Med)` -> `Property (Cherating)` -> `Property (Borneo)`.
+- **FR-24**: **Scoped Data**: KB documents and Analytics must be isolatable by Property while accessible to Tenant Admin.
 
-### 3.4 User Interface (Agent Dashboard)
-*The interaction layer.*
-- **FR-13**: Simple chat interface with "Type & Send" functionality.
-- **FR-14**: Markdown rendering for structured responses (Bold, Bullets, Headings).
-- **FR-15**: Mobile-responsive design for tablet usage.
-- **FR-16**: Clear visual distinction between User and AI messages.
+### 3.4 Onboarding & Billing (Stripe)
+*Automated revenue engine.*
+- **FR-25**: **Self-Serve Signup**: frictionless registration page.
+- **FR-26**: **Stripe Integration**:
+    - Subscription Plans (Free, Pro, Enterprise).
+    - Automated Invoicing & Payment Failure handling.
+    - Usage-based billing (optional) for efficient token consumption.
+- **FR-27**: **Billing Portal**: Customer portal for upgrading/downgrading/cancelling.
 
-### 3.5 Advanced Analytics & Reporting
-*Deep insights for management.*
-- **FR-17**: Dual-axis trending charts (Volume vs Response Time) with dynamic granularity (Hourly/Daily).
-- **FR-18**: Robust data filling ("Zero-Fill") to ensure continuous timelines even with sparse data.
-- **FR-19**: Comprehensive date filtering (Today, 48h, 7d, 30d, Custom Range).
+### 3.5 ROI Comparison Engine
+*Sales enablement tool.*
+- **FR-28**: **"Before vs After" Simulator**: Input current costs (Agent hourly rate, AHT) vs. System Performance to visualize savings.
+- **FR-29**: **Investment Feasibility Report**: PDF export of projected ROI for potential investors.
 
 ---
 
 ## 4. Technical Architecture
 
 ### 4.1 Tech Stack
-- **Frontend**: Next.js (React), Tailwind CSS, TypeScript.
+- **Frontend**: Next.js (React), Tailwind CSS.
 - **Backend**: FastAPI (Python), Uvicorn.
-- **AI/ML**: LangChain, OpenAI API (GPT-4o, Embeddings).
-- **Database**: ChromaDB (Vector Store), In-memory (for MVP).
-- **External APIs**: Google Maps Places API.
+- **Database**: 
+    - **Relational**: PostgreSQL (Users, Orgs, Properties, Billing).
+    - **Vector**: ChromaDB (Embeddings, scoped by `org_id` + `property_id`).
+- **Billing**: Stripe API.
 
-### 4.2 Data Flow
-1. **User Input** → Frontend → API Request (`/api/chat`).
-2. **Backend Routing**:
-   - If `is_resort_facility()` → **RAG Pipeline**.
-   - If `detect_location_query()` → **Google Maps Service**.
-   - Else → **RAG Pipeline**.
-3. **Processing**:
-   - **RAG**: Query Embeddings → Vector Search → Context Assembly → LLM Generation.
-   - **Maps**: Place Search → Distance Calc → Formatting.
-4. **Response** → Frontend → Markdown Renderer → **User Display**.
-
-### 4.3 Security & Performance
-- **Latency**: API response timeout set to 30s (target <3s).
-- **Auth**: API Key validation for external services.
-- **Data Privacy**: No PII stored in vector DB; ephemeral chat history.
+### 4.2 Data Model Changes
+- **Organization**: The paying entity (Tenant).
+- **Property**: The physical location (Hotel).
+- **User**: Links to Organization (and optionally specific Property).
+- **KBDocument**: Scoped to Organization OR Property.
 
 ---
 
-## 5. User Flows
+## 5. Implementation Roadmap
 
-### Flow A: The "Resort Facility" Query
-1. **Agent** types: "What time does the pool close?"
-2. **System** detects "pool" as resort facility.
-3. **System** searches Knowledge Base.
-4. **System** returns: "**Main Pool** closes at **8:00 PM**." (Source: `facilities.txt`)
+### Phase 1-3: Completed
+- Core RAG, Maps, Dashboard, Analytics.
 
-### Flow B: The "External Amenity" Query
-1. **Agent** types: "Where is the nearest pharmacy?"
-2. **System** detects "nearest" + "pharmacy".
-3. **System** calls Google Maps API.
-4. **System** returns: "1. **Health Lane Pharmacy** (2.5km) - Open Now."
+### Phase 4: SaaS Platform Core (In Progress)
+- [x] **User Authentication (SSO/JWT)**
+- [x] **Multi-tenant Data Isolation** (Base `org_id`)
+- [ ] **Multi-Property Architecture** (`property_id` layer)
+- [ ] **RBAC Implementation** (Roles & Permissions middleware)
+- [ ] **Onboarding Flow** (Signup -> Stripe Checkout -> Org Creation)
 
-### Flow C: The "Complex" Query
-1. **Agent** types: "Is breakfast included and where is it?"
-2. **System** retrieves context on "breakfast" and "restaurants".
-3. **System** synthesizes: "Yes, breakfast is included in the All-Inclusive package. It is served at **Mutiara Restaurant** from 7:15 AM."
-
----
-
-## 6. Implementation Roadmap
-
-### Phase 1: MVP (Completed)
-- [x] Core RAG pipeline.
-- [x] Basic UI.
-- [x] Knowledge base ingestion (23 initial questions).
-
-### Phase 2: Enhanced Intelligence (Completed)
-- [x] Google Maps integration.
-- [x] Smart routing logic.
-- [x] Markdown formatting.
-- [x] Expanded knowledge base (100+ questions).
-
-### Phase 3: CFO Analytics & Global Reach (Completed)
-- [x] ROI & Financial Metrics Dashboard.
-- [x] Executive Reporting (PDF/CSV).
-- [x] Multi-language support (50+ languages).
-- [x] Persistent Chat History (Session-based).
-- [x] **Enhanced Visualizations** (Dual-Axis, Zero-Fill, Dynamic Aggregation).
-
-### Phase 4: SaaS Scale-Up (Next)
-- [ ] User Authentication (SSO).
-- [ ] Admin Dashboard for KB updates.
-- [ ] Multi-tenant Data Isolation.
-- [ ] Billing & Subscription Management.
+### Phase 5: Advanced Enterprise Features (New)
+- [ ] **SaaS Controller Service** (Super Admin Dashboard)
+- [ ] **Stripe Deep Integration** (Webhooks, Usage Metering, Failure Handling)
+- [ ] **ROI Comparison Engine**
+- [ ] **Custom Dashboards** (Role-based views)
+- [ ] **Production Readiness** (Disable Demo Mode, Full Security Audit)
 
 ---
 
-## 7. Assumptions & Constraints
-- **Internet**: Agents must have stable internet connection.
-- **Language**: MVP supports English only.
-- **Data**: Hotel provides accurate, up-to-date documentation.
-- **API Costs**: Client covers OpenAI and Google Maps usage fees.
-
----
-
-## 8. Sign-off
-**Approved By**:
-_________________________ (Product)  
-_________________________ (Engineering)  
-_________________________ (Operations)
+## 6. Assumptions & Constraints
+- **Stripe**: Requires Test Mode API keys for development.
+- **Postgres**: Development will continue on SQLite with robust schema mirroring production Postgres.

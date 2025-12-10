@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import Link from 'next/link';
 
 export default function LoginForm() {
     const { login, register } = useAuth();
@@ -61,7 +62,7 @@ export default function LoginForm() {
                 {isLogin ? (
                     <>
                         <div>
-                            <label className="block text-sm font-medium text-slate-700">Organization ID</label>
+                            <label className="block text-sm font-medium text-slate-700">Organization ID (Slug)</label>
                             <input
                                 type="text"
                                 required
@@ -137,7 +138,12 @@ export default function LoginForm() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-700">Password</label>
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="block text-sm font-medium text-slate-700">Password</label>
+                                <Link href="/forgot-password" className="text-xs text-[#0F4C81] hover:underline">
+                                    Forgot Password?
+                                </Link>
+                            </div>
                             <input
                                 type="password"
                                 required

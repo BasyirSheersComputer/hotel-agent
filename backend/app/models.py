@@ -74,6 +74,32 @@ class Organization(Base):
     sessions = relationship("ChatSession", back_populates="organization", cascade="all, delete-orphan")
     kb_documents = relationship("KBDocument", back_populates="organization", cascade="all, delete-orphan")
 
+class Property(Base):
+    """
+    Property table (Hotel/Resort).
+    Belongs to an Organization.
+    """
+    __tablename__ = "properties"
+    __table_args__ = {'extend_existing': True}
+    
+    property_id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
+    org_id = Column(UUIDType, ForeignKey("organizations.org_id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    slug = Column(String(100), unique=True, nullable=False, index=True)
+    address = Column(String(255))
+    timezone = Column(String(50), default="UTC")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    settings = Column(JSON, default={})
+    
+    # Relationships
+    organization = relationship("Organization", back_populates="properties")
+    users = relationship("User", back_populates="property")
+    sessions = relationship("ChatSession", back_populates="property")
+    kb_documents = relationship("KBDocument", back_populates="property")
+
+# Organization Updates (add relationship)
+Organization.properties = relationship("Property", back_populates="organization", cascade="all, delete-orphan")
+
 class User(Base):
     """
     User table (tenant-scoped).
@@ -82,21 +108,26 @@ class User(Base):
     
     user_id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
     org_id = Column(UUIDType, ForeignKey("organizations.org_id", ondelete="CASCADE"), nullable=False, index=True)
+    property_id = Column(UUIDType, ForeignKey("properties.property_id", ondelete="SET NULL"), nullable=True, index=True) # Optional link to specific property
     email = Column(String(255), nullable=False)
     password_hash = Column(String(255), nullable=False)
     name = Column(String(255))
-    role = Column(String(50), default="agent")  # admin, agent, viewer
-    language_pref = Column(String(10), default="en")  # For multi-language support
+    role = Column(String(50), default="agent")  # super_admin, tenant_admin, property_manager, agent, viewer
+    language_pref = Column(String(10), default="en")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_login = Column(DateTime(timezone=True))
     
+    # Password Reset
+    reset_token = Column(String(100), nullable=True, index=True)
+    reset_token_expires = Column(DateTime(timezone=True), nullable=True)
+    
     # Relationships
     organization = relationship("Organization", back_populates="users")
+    property = relationship("Property", back_populates="users")
     sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
     
     __table_args__ = (
-        # Unique email per organization
-        {"schema": None, "extend_existing": True}  # Will add unique constraint in Alembic migration
+        {"schema": None, "extend_existing": True}
     )
 
 class ChatSession(Base):
@@ -108,6 +139,7 @@ class ChatSession(Base):
     
     session_id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
     org_id = Column(UUIDType, ForeignKey("organizations.org_id", ondelete="CASCADE"), nullable=False, index=True)
+    property_id = Column(UUIDType, ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=True, index=True) # Optional if org-wide
     user_id = Column(UUIDType, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
     title = Column(String(255))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -115,6 +147,7 @@ class ChatSession(Base):
     
     # Relationships
     organization = relationship("Organization", back_populates="sessions")
+    property = relationship("Property", back_populates="sessions")
     user = relationship("User", back_populates="sessions")
     messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
 
@@ -144,26 +177,28 @@ class KBDocument(Base):
     
     doc_id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
     org_id = Column(UUIDType, ForeignKey("organizations.org_id", ondelete="CASCADE"), nullable=False, index=True)
+    property_id = Column(UUIDType, ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=True, index=True) # Optional (Global vs Local)
     filename = Column(String(255), nullable=False)
-    file_url = Column(Text, nullable=False)  # Cloud storage URL
-    content_hash = Column(String(64))  # SHA-256 for deduplication
+    file_url = Column(Text, nullable=False)
+    content_hash = Column(String(64))
     uploaded_by = Column(UUIDType, ForeignKey("users.user_id"))
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
-    status = Column(String(50), default="processing")  # processing, active, failed
+    status = Column(String(50), default="processing")
     
     # Relationships
     organization = relationship("Organization", back_populates="kb_documents")
+    property = relationship("Property", back_populates="kb_documents")
 
 class Query(Base):
     """
     Analytics query table (tenant-scoped).
-    Enhanced version of previous metrics table.
     """
     __tablename__ = "queries"
     __table_args__ = {'extend_existing': True}
     
     id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
     org_id = Column(UUIDType, ForeignKey("organizations.org_id", ondelete="CASCADE"), nullable=False, index=True)
+    property_id = Column(UUIDType, ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=True, index=True)
     user_id = Column(UUIDType, ForeignKey("users.user_id"))
     session_id = Column(UUIDType, ForeignKey("chat_sessions.session_id"))
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)
@@ -171,7 +206,7 @@ class Query(Base):
     response_time_ms = Column(Integer, nullable=False)
     question_category = Column(String(100))
     source_type = Column(String(50))
-    agent_id = Column(String(255))  # Legacy field, use user_id instead
+    agent_id = Column(String(255))
     success = Column(Boolean, default=True)
     error_message = Column(Text)
     tokens_used = Column(Integer, default=0)
@@ -205,10 +240,10 @@ class KBEmbedding(Base):
     
     embedding_id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
     org_id = Column(UUIDType, ForeignKey("organizations.org_id", ondelete="CASCADE"), nullable=False, index=True)
+    property_id = Column(UUIDType, ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=True, index=True) # Optional
     doc_id = Column(UUIDType, ForeignKey("kb_documents.doc_id", ondelete="CASCADE"))
     content = Column(Text, nullable=False)
-    # embedding column will be added via Alembic migration with pgvector type
-    # embedding = Column(Vector(1536))  # For OpenAI text-embedding-3-small
+    # embedding = Column(Vector(1536))
     meta_data = Column(JSONB if "postgresql" in DATABASE_URL else Text)
 
 class AgentMetric(Base):
@@ -218,8 +253,9 @@ class AgentMetric(Base):
     __tablename__ = "agent_metrics"
     __table_args__ = {'extend_existing': True}
     
-    agent_id = Column(String(255), primary_key=True) # Usually mapped to a name or ID
+    agent_id = Column(String(255), primary_key=True)
     org_id = Column(UUIDType, ForeignKey("organizations.org_id", ondelete="CASCADE"), nullable=False, primary_key=True)
+    property_id = Column(UUIDType, ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=True, index=True)
     first_seen = Column(DateTime(timezone=True), server_default=func.now())
     last_seen = Column(DateTime(timezone=True), server_default=func.now())
     total_queries = Column(Integer, default=0)
@@ -233,6 +269,7 @@ class PerformanceSnapshot(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     org_id = Column(UUIDType, ForeignKey("organizations.org_id", ondelete="CASCADE"), nullable=False, index=True)
+    property_id = Column(UUIDType, ForeignKey("properties.property_id", ondelete="CASCADE"), nullable=True, index=True)
     snapshot_time = Column(DateTime(timezone=True), server_default=func.now())
     total_queries = Column(Integer)
     avg_response_time_ms = Column(DECIMAL(10, 2))

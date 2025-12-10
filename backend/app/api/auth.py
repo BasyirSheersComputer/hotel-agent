@@ -63,6 +63,15 @@ class UserResponse(BaseModel):
     is_demo: bool
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
 # =============================================================================
 # ENDPOINTS
 # =============================================================================
@@ -410,3 +419,62 @@ async def auth_status():
         "auth_required": not DEMO_MODE,
         "message": "Demo mode active - authentication bypassed" if DEMO_MODE else "SaaS mode - authentication required"
     }
+
+import secrets
+
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Initiate password reset flow.
+    Generates a token and 'sends' an email (simulated).
+    """
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        # Prevent enumeration
+        return {"message": "If an account exists, a reset link has been sent."}
+    
+    # Generate token
+    token = secrets.token_urlsafe(32)
+    expires = datetime.utcnow() + timedelta(hours=1)
+    
+    user.reset_token = token
+    user.reset_token_expires = expires
+    db.commit()
+    
+    # Simulate Email Sending
+    reset_link = f"http://localhost:3000/reset-password?token={token}"
+    print(f"==================================================")
+    print(f"EMAIL SIMULATION - PASSWORD RESET")
+    print(f"To: {request.email}")
+    print(f"Link: {reset_link}")
+    print(f"==================================================")
+    
+    return {"message": "If an account exists, a reset link has been sent."}
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+async def reset_password_endpoint(
+    request: ResetPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Complete password reset flow.
+    """
+    user = db.query(User).filter(User.reset_token == request.token).first()
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+        
+    if user.reset_token_expires < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Token expired")
+        
+    # Update password
+    user.password_hash = AuthService.hash_password(request.new_password)
+    user.reset_token = None
+    user.reset_token_expires = None
+    db.commit()
+    
+    return {"message": "Password updated successfully"}

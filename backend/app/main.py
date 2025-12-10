@@ -22,7 +22,7 @@ from app.config.settings import (
 from app.core.logger import configure_logging
 
 # Import routers
-from app.api import chat, dashboard, admin, history
+from app.api import chat, dashboard, admin, history, super_admin
 from app.api.auth import router as auth_router
 
 # Import middleware
@@ -103,6 +103,9 @@ app.include_router(history.router)
 from app.api import subscriptions
 app.include_router(subscriptions.router)
 app.include_router(subscriptions.webhook_router)
+
+# Super Admin endpoints
+app.include_router(super_admin.router)
 
 # =============================================================================
 # ROOT ENDPOINTS

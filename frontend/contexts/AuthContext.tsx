@@ -12,6 +12,8 @@ interface User {
     role: string;
     org_id: string;
     org_slug: string | null;
+    property_id: string | null;
+    property_name: string | null;
     is_demo: boolean;
 }
 
@@ -28,6 +30,7 @@ interface AuthContextType extends AuthState {
     logout: () => void;
     register: (email: string, password: string, name: string, orgSlug: string) => Promise<void>;
     checkAuthStatus: () => Promise<void>;
+    switchProperty: (propertyId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -195,8 +198,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
     };
 
+    // Switch active property context
+    const switchProperty = async (propertyId: string) => {
+        // Ideally verify property access via API or update user session
+        // For now, we update local state optimistically or re-fetch me
+        // Note: Token might need refresh if scopes change, but standard JWT usually just has org_id
+        console.log("Switching to property:", propertyId);
+        // Re-fetch user to confirm access/update context if backend facilitates it
+        await checkAuthStatus();
+    };
+
     return (
-        <AuthContext.Provider value={{ ...state, login, logout, register, checkAuthStatus }}>
+        <AuthContext.Provider value={{ ...state, login, logout, register, checkAuthStatus, switchProperty }}>
             {children}
         </AuthContext.Provider>
     );

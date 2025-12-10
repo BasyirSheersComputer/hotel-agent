@@ -232,7 +232,7 @@ export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
             </aside >
 
             {/* Desktop Sidebar Footer (User Profile) */}
-            <div className="hidden md:flex absolute bottom-0 left-0 w-[320px] p-8 border-t border-black/5 bg-white/50 backdrop-blur-sm items-center justify-between z-20">
+            <div className="hidden md:flex absolute bottom-0 left-0 w-[320px] p-8 border-t border-black/5 bg-white/50 backdrop-blur-sm items-center justify-between z-50">
                 <div className="flex items-center gap-3 overflow-hidden">
                     <div className="w-8 h-8 rounded-full bg-[#0F4C81] text-white flex items-center justify-center text-xs font-bold shrink-0">
                         {user?.name?.[0] || user?.email?.[0] || "U"}
@@ -243,7 +243,10 @@ export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
                     </div>
                 </div>
                 <button
-                    onClick={onLogout}
+                    onClick={() => {
+                        if (onLogout) onLogout();
+                        window.location.href = '/login';
+                    }}
                     className="p-2 text-gray-500 hover:text-[#0F4C81] hover:bg-black/5 rounded-lg transition-colors"
                     title="Sign Out"
                 >
@@ -253,7 +256,7 @@ export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
                         <line x1="21" y1="12" x2="9" y2="12" />
                     </svg>
                 </button>
-            </div >
+            </div>
 
             {/* Main Chat Area */}
             < main className="flex-1 flex flex-col bg-white/30" >

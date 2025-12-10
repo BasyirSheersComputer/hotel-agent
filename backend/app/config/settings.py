@@ -6,6 +6,8 @@ import os
 from typing import Optional
 import uuid
 
+print("DEBUG: Loading settings.py...")
+
 # =============================================================================
 # LOGGING CONFIGURATION
 # =============================================================================
@@ -28,7 +30,7 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 # - CORS restricted to whitelisted origins
 # =============================================================================
 
-DEMO_MODE = os.getenv("DEMO_MODE", "true").lower() == "true"
+DEMO_MODE = False # Hardcoded for testing
 
 # Demo tenant and user (used when DEMO_MODE=true)
 DEMO_ORG_ID = os.getenv("DEMO_ORG_ID", "00000000-0000-0000-0000-000000000001")

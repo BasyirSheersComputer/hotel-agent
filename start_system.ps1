@@ -20,8 +20,15 @@ function Kill-Port {
     }
 }
 
-# Cleanup Ports
+# Robust Process Killing
+Write-Host "Cleaning up existing processes..." -ForegroundColor Yellow
+taskkill /F /IM python.exe /T 2>$null
+taskkill /F /IM node.exe /T 2>$null
+taskkill /F /IM uvicorn.exe /T 2>$null
+
+# Cleanup Ports (Just in case)
 Kill-Port 8000
+Kill-Port 8001
 Kill-Port 3000
 
 # Cleanup Lock File
@@ -32,18 +39,25 @@ if (Test-Path $lockFile) {
 }
 
 # Start Backend
-Write-Host "Starting Backend (Port 8000)..." -ForegroundColor Cyan
-Start-Process -FilePath "cmd.exe" -ArgumentList "/k cd backend && python -m uvicorn app.main:app --reload --port 8000" -WindowStyle Normal
+Write-Host "Starting Backend (Port 8001 to avoid conflicts)..." -ForegroundColor Cyan
+# Inject Env Vars for SaaS Mode
+$backendEnv = @{
+    "DEMO_MODE" = "false";
+    "NEXT_PUBLIC_API_URL" = "http://localhost:8001";
+    "PORT" = "8001"
+}
+Start-Process -FilePath "cmd.exe" -ArgumentList "/k cd backend && set DEMO_MODE=false&& python -m uvicorn app.main:app --reload --port 8001" -WindowStyle Normal
 
 # Start Frontend
 Write-Host "Waiting for Backend to initialize..." -ForegroundColor Cyan
-Start-Sleep -Seconds 2
+Start-Sleep -Seconds 5
 
 Write-Host "Starting Frontend (Port 3000)..." -ForegroundColor Cyan
-Start-Process -FilePath "cmd.exe" -ArgumentList "/k cd frontend && npm run dev" -WindowStyle Normal
+# Ensure Frontend knows about Port 8001 (No trailing space!)
+Start-Process -FilePath "cmd.exe" -ArgumentList "/k cd frontend && set NEXT_PUBLIC_API_URL=http://localhost:8001&& npm run dev" -WindowStyle Normal
 
 Write-Host "System is starting up!" -ForegroundColor Green
-Write-Host "Backend: http://localhost:8000/docs"
+Write-Host "Backend: http://localhost:8001/docs"
 Write-Host "Frontend: http://localhost:3000"
 Write-Host "Press any key to exit this launcher..."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
