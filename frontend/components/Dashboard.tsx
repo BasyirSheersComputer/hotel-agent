@@ -354,7 +354,38 @@ function DashboardContent() {
                         <div className="lg:col-span-3 bg-white/60 rounded-[16px] border border-black/5 p-6 shadow-sm">
                             <h3 className="text-lg font-serif font-semibold text-[#0F4C81] mb-6">Hourly Trends</h3>
                             <div className="h-80 w-full">
-                                <SimpleLineChart data={trends} />
+                                {(() => {
+                                    // Calculate Chart Range Logic
+                                    let start = 0;
+                                    let end = 0;
+
+                                    if (viewMode === 'custom' && customDates.start && customDates.end) {
+                                        // Custom Date Range (Start 00:00 to End 23:59)
+                                        start = new Date(`${customDates.start}T00:00:00`).getTime();
+                                        end = new Date(`${customDates.end}T23:59:59`).getTime();
+                                    } else {
+                                        // Preset (Rolling from Now? Or Start of Day?)
+                                        // "Today" (24h) usually implies last 24h in this context, or today 00:00?
+                                        // The selector says "24h", "48h". Let's stick to Rolling window as implied by "24h".
+                                        // If user wants Calendar Today, we'd need a "Today" button separate from "24h".
+                                        // But wait, the button label is "Today" for 24h.
+                                        // If label is "Today", let's make it start at 00:00 today?
+                                        // Actually, consistency with "48h" implies duration.
+                                        // Let's use: End = Now, Start = Now - hours.
+                                        const now = new Date();
+                                        now.setMinutes(0, 0, 0);
+                                        end = now.getTime();
+                                        start = end - (timeRange * 3600 * 1000);
+                                    }
+
+                                    return (
+                                        <SimpleLineChart
+                                            data={trends}
+                                            rangeStart={start}
+                                            rangeEnd={end}
+                                        />
+                                    );
+                                })()}
                             </div>
                         </div>
 
@@ -589,47 +620,185 @@ function SourceBar({ label, count, percentage, color }: SourceBarProps) {
     );
 }
 
-function SimpleLineChart({ data }: { data: HourlyTrend[] }) {
-    if (!data.length) return <div className="h-full flex items-center justify-center text-slate-400">No data available</div>;
+import {
+    ComposedChart,
+    Bar,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer
+} from 'recharts';
 
-    const maxVal = Math.max(...data.map(d => d.queryVolume), 5);
+// ... (existing helper functions if any)
+
+interface SimpleLineChartProps {
+    data: HourlyTrend[];
+    rangeStart: number;
+    rangeEnd: number;
+}
+
+function SimpleLineChart({ data, rangeStart, rangeEnd }: SimpleLineChartProps) {
+    console.log("Chart Debug:", { rangeStart, rangeEnd, dataLen: data.length });
+    const durationHours = (rangeEnd - rangeStart) / (1000 * 3600);
+    const isDaily = durationHours > 50;
+
+    // 1. Map existing data
+    const chartMap = new Map();
+    data.forEach(d => {
+        try {
+            const date = new Date((d.time || "").replace(' ', 'T'));
+            if (!isNaN(date.getTime())) {
+                const key = isDaily
+                    ? new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+                    : (date.setMinutes(0, 0, 0), date.getTime());
+
+                // Aggregate if collision (for daily)
+                if (chartMap.has(key)) {
+                    const existing = chartMap.get(key);
+                    const totalVol = existing.queryVolume + d.queryVolume;
+                    // Weighted avg for response time
+                    const weightedTime = (existing.avg_response_time_ms * existing.queryVolume + d.avg_response_time_ms * d.queryVolume) / (totalVol || 1);
+
+                    chartMap.set(key, {
+                        ...existing,
+                        queryVolume: totalVol,
+                        avg_response_time_ms: weightedTime
+                    });
+                } else {
+                    chartMap.set(key, { ...d });
+                }
+            }
+        } catch { }
+    });
+
+    // 2. Zero-Fill Loop
+    const filledData = [];
+    let current = rangeStart;
+    const step = isDaily ? 24 * 3600 * 1000 : 3600 * 1000;
+
+    // Safety limit
+    let iterations = 0;
+    while (current <= rangeEnd && iterations < 1000) {
+        iterations++;
+        const key = current; // Already normalized by loop step logic if we align current correctly?
+        // Actually current starts at specific time. If Daily, we want 00:00 of that day.
+
+        let normalizedKey = current;
+        const dateObj = new Date(current);
+
+        if (isDaily) {
+            normalizedKey = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()).getTime();
+        } else {
+            // Ensure hour alignment?
+            // If rangeStart is not hour aligned, this loop might be offset.
+            // But lets assume passed timestamps are reasonable.
+        }
+
+        const existing = chartMap.get(normalizedKey);
+
+        // Format Label
+        let label = "";
+        if (isDaily) {
+            // "Dec 10"
+            label = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        } else {
+            // Hourly
+            // Always show Day if range >= 24h to avoid "14:00" (Yesterday) vs "14:00" (Today) collision
+            if (durationHours >= 24) {
+                label = `${dateObj.getDate()}/${dateObj.getMonth() + 1} ${dateObj.getHours().toString().padStart(2, '0')}:00`;
+            } else {
+                label = dateObj.getHours().toString().padStart(2, '0') + ":00";
+            }
+        }
+
+        if (existing) {
+            filledData.push({
+                ...existing,
+                name: label,
+                response_time: parseFloat((existing.avg_response_time_ms || 0).toFixed(0))
+            });
+        } else {
+            filledData.push({
+                time: dateObj.toISOString(),
+                queryVolume: 0,
+                avg_response_time_ms: 0,
+                success_rate: 0,
+                name: label,
+                response_time: 0
+            });
+        }
+
+        current += step;
+    }
 
     return (
-        <div className="h-full flex items-end gap-1 pt-4">
-            {data.map((d, i) => {
-                const heightPercent = (d.queryVolume / maxVal) * 100;
-                return (
-                    <div key={i} className="flex-1 flex flex-col items-center group relative">
-                        {/* Tooltip */}
-                        <div className="absolute bottom-full mb-2 hidden group-hover:block z-10 bg-slate-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                            {d.queryVolume} queries at {(() => {
-                                try {
-                                    const date = new Date((d.time || "").replace(' ', 'T'));
-                                    return isNaN(date.getTime()) ? "?" : date.getHours();
-                                } catch { return "?"; }
-                            })()}:00
-                        </div>
-                        {/* Bar (simulating line point for MVP) */}
-                        <div
-                            className="w-full mx-0.5 bg-purple-100 hover:bg-purple-200 rounded-t-sm transition-all relative"
-                            style={{ height: `${Math.max(heightPercent, 5)}%` }}
-                        >
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-purple-500 rounded-full -mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                        {/* X Axis Label */}
-                        {i % 3 === 0 && (
-                            <div className="text-[10px] text-slate-400 mt-1">
-                                {(() => {
-                                    try {
-                                        const date = new Date((d.time || "").replace(' ', 'T'));
-                                        return isNaN(date.getTime()) ? "" : `${date.getHours()}h`;
-                                    } catch { return ""; }
-                                })()}
-                            </div>
-                        )}
-                    </div>
-                );
-            })}
+        <div className="h-full w-full pt-4">
+            <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                    data={filledData}
+                    margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                >
+                    <CartesianGrid stroke="#f5f5f5" vertical={false} />
+                    <XAxis
+                        dataKey="name"
+                        scale="band"
+                        tick={{ fontSize: 10, fill: '#64748b' }}
+                        tickLine={false}
+                        axisLine={false}
+                        interval="preserveStartEnd"
+                        minTickGap={30}
+                    />
+                    <YAxis
+                        yAxisId="left"
+                        orientation="left"
+                        tick={{ fontSize: 10, fill: '#64748b' }}
+                        tickLine={false}
+                        axisLine={false}
+                        label={{ value: 'Queries', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#94a3b8', fontSize: 10 } }}
+                    />
+                    <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        tick={{ fontSize: 10, fill: '#64748b' }}
+                        tickLine={false}
+                        axisLine={false}
+                        unit="ms"
+                        label={{ value: 'Avg Time (ms)', angle: 90, position: 'insideRight', style: { textAnchor: 'middle', fill: '#94a3b8', fontSize: 10 } }}
+                    />
+                    <Tooltip
+                        contentStyle={{
+                            backgroundColor: '#fff',
+                            borderRadius: '12px',
+                            border: '1px solid #e2e8f0',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                            fontSize: '12px'
+                        }}
+                        itemStyle={{ padding: 0 }}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                    <Bar
+                        yAxisId="left"
+                        dataKey="queryVolume"
+                        name="Query Volume"
+                        barSize={isDaily ? 40 : 20} // Thicker bars for daily
+                        fill="#0F4C81"
+                        radius={[4, 4, 0, 0]}
+                    />
+                    <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="response_time"
+                        name="Avg Response Time"
+                        stroke="#D4AF37"
+                        strokeWidth={2}
+                        dot={isDaily} // Show dots for daily points
+                        activeDot={{ r: 4 }}
+                    />
+                </ComposedChart>
+            </ResponsiveContainer>
         </div>
     );
 }
