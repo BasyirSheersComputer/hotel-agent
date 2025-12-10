@@ -97,7 +97,33 @@ This guide covers deployment for both **Google Cloud** (Scalable/Serverless) and
 
 ---
 
-## 3. Compute Sizing (Recommendation)
+## 3. Local Development (Quickstart)
+
+### One-Click Startup (Recommended)
+We provide a robust startup script that handles port conflicts, dependency checks, and launches both Backend and Frontend automatically.
+
+1.  **Windows**:
+    ```cmd
+    start_system.bat
+    ```
+    *This wraps `start_system.ps1` which gracefully cleans up ports 3000/8000 before starting.*
+
+2.  **Manual Start**:
+    If you prefer manual control:
+    *   **Backend**:
+        ```bash
+        cd backend
+        python -m uvicorn app.main:app --reload --port 8000
+        ```
+    *   **Frontend**:
+        ```bash
+        cd frontend
+        npm run dev
+        ```
+
+---
+
+## 4. Compute Sizing (Recommendation)
 
 | Component | Google Cloud (optimal) | On-Prem / VM (Minimum) |
 |-----------|------------------------|------------------------|

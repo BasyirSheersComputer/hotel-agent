@@ -34,7 +34,7 @@ SaaS transformation documentation:
 
 ## Quick Links
 
-- [System Specification](specifications/SYSTEM_SPEC_V1.0.md)
+- [System Specification (v1.1)](specifications/SYSTEM_SPEC_V1.0.md)
 - [SaaS Roadmap](SAAS_ROADMAP.md)
-- [Deployment Guide](guides/DEPLOYMENT.md)
+- [Deployment Guide](DEPLOYMENT.md)
 - [Product Requirements](specifications/prd.md)

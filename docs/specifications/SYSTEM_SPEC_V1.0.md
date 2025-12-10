@@ -1,10 +1,10 @@
 # Resort Genius v1.0 - System Specification
 **Stable Build Documentation**
 
-**Version**: 1.0.0  
-**Status**: Production Ready (Single-Tenant)  
-**Date**: 2025-12-04  
-**Purpose**: Complete system specification for rollback and reference
+**Version**: 1.1.0  
+**Status**: Enhanced Production Build (Single-Tenant)  
+**Date**: 2025-12-10  
+**Purpose**: Complete system specification including dashboard enhancements
 
 ---
 
@@ -146,7 +146,7 @@ Resort Genius v1.0 is a **single-tenant AI chatbot** for hotel call center agent
 **Feature 3.2**: Analytics Dashboard
 - Real-time performance metrics
 - KPI cards (queries, response time, accuracy, AHT)
-- Hourly trends chart
+- **Enhanced Hourly Trends**: Dual-axis chart (Volume vs Response Time) with Dynamic Aggregation (Hourly/Daily) and Zero-Fill logic.
 - Query source distribution
 - Agent performance table
 - Top question categories
@@ -241,6 +241,11 @@ CREATE TABLE agents (
 - **Auto-Translation**: Google Translate API integration.
 - **Languages**: 50+ languages supported (French, Spanish, Chinese, etc.).
 - **Response**: AI answers generated in English, verified, then translated back.
+
+**Feature 3.4: Enhanced Data Visualization**
+- **Dual-Axis Charts**: Simultaneously track Query Volume (Bar) and Response Time (Line) on the same timeline.
+- **Smart Aggregation**: Automatically switches between Hourly and Daily,granularity based on the selected time range (e.g., 30d view aggregates by Day).
+- **Robust Rendering**: "Zero-Fill" logic ensures continuous timelines even with sparse data.
 
 **Files**:
 - `backend/app/services/pdf_report_service.py`
@@ -408,6 +413,10 @@ CREATE TABLE agents (
 
 **Backend**:
 ```bash
+# Recommended: Use start_system.bat (Windows) for automatic setup
+start_system.bat
+
+# Manual:
 cd backend
 python -m uvicorn app.main:app --reload --port 8000
 ```
