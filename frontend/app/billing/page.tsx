@@ -9,7 +9,7 @@ export default function BillingPage() {
     const [error, setError] = useState<string | null>(null);
 
     // API Base URL - defaults to localhost:8001 (Port 8000 blocked)
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
     const handleUpgrade = async () => {
         setLoading('annual');

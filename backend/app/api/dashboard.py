@@ -84,7 +84,7 @@ class SourceMetric(BaseModel):
 @router.get("/metrics/summary", response_model=MetricsSummary)
 async def get_metrics_summary(
     request: Request,
-    hours: int = Query(default=24, ge=1, le=168, description="Hours to look back (1-168)"),
+    hours: int = Query(default=24, ge=1, le=744, description="Hours to look back (1-744)"),
     start_date: Optional[str] = Query(None, description="ISO Start Date (YYYY-MM-DDTHH:MM:SS)"),
     end_date: Optional[str] = Query(None, description="ISO End Date (YYYY-MM-DDTHH:MM:SS)")
 ):
@@ -107,7 +107,7 @@ async def get_metrics_summary(
 @router.get("/metrics/categories", response_model=List[CategoryMetric])
 async def get_question_categories(
     request: Request,
-    hours: int = Query(default=24, ge=1, le=168),
+    hours: int = Query(default=24, ge=1, le=744),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None)
 ):
@@ -128,7 +128,7 @@ async def get_question_categories(
 @router.get("/metrics/trends", response_model=List[HourlyTrend])
 async def get_hourly_trends(
     request: Request,
-    hours: int = Query(default=24, ge=1, le=168),
+    hours: int = Query(default=24, ge=1, le=744),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None)
 ):
@@ -149,7 +149,7 @@ async def get_hourly_trends(
 @router.get("/metrics/agents", response_model=List[AgentMetric])
 async def get_agent_performance(
     request: Request,
-    hours: int = Query(default=24, ge=1, le=168),
+    hours: int = Query(default=24, ge=1, le=744),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None)
 ):
@@ -170,7 +170,7 @@ async def get_agent_performance(
 @router.get("/metrics/sources", response_model=List[SourceMetric])
 async def get_source_distribution(
     request: Request,
-    hours: int = Query(default=24, ge=1, le=168)
+    hours: int = Query(default=24, ge=1, le=744)
 ):
     """
     Get distribution of query sources (RAG, Maps, etc.)
