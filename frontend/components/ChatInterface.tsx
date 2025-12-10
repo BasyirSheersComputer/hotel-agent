@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import LanguageSelector from "./LanguageSelector";
 
 // API URL from environment - smart default for local dev
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // Language storage key
 const LANGUAGE_STORAGE_KEY = "resort_genius_language";
@@ -169,7 +169,7 @@ export default function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
             console.error("Error:", error);
             setMessages((prev) => [
                 ...prev,
-                { role: "agent", content: "I apologize, but I seem to be offline. Please check your connection." },
+                { role: "agent", content: `I apologize, but I seem to be offline. Please check your connection. (Error: ${error instanceof Error ? error.message : String(error)})` },
             ]);
         } finally {
             setIsLoading(false);

@@ -51,3 +51,5 @@ backend/postgres_data/
 backend/resort_genius.db
 backend/venv/
 backend/.env.bak
+*.db-shm
+*.db-wal

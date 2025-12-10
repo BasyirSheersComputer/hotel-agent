@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-    const { login, isDemo, isLoading, error } = useAuth();
+    const { login, isDemo, isLoading, error, user } = useAuth();
     const router = useRouter();
 
     const [email, setEmail] = useState("");
@@ -25,8 +25,16 @@ export default function LoginPage() {
         }
     };
 
-    // If demo mode, show demo indicator
-    if (isDemo && !isLoading) {
+    // Redirect if already logged in
+    useEffect(() => {
+        if (user && !isLoading) {
+            router.push("/");
+        }
+    }, [user, isLoading, router]);
+
+    // If demo mode AND user is authenticated, show demo indicator (success state)
+    // If not authenticated, we should fall through to the login form
+    if (isDemo && !isLoading && user) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
                 <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-8 max-w-md w-full text-center border border-slate-700/50">
