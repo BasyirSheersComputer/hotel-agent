@@ -23,16 +23,15 @@ export function PropertySwitcher() {
             if (!user?.org_id) return;
             try {
                 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-                const res = await fetch(`${API_URL}/api/admin/properties`, { headers: headers as HeadersInit });
+                // Only try to fetch if we have a token (user logged in)
+                if (!headers.Authorization) return;
+
+                const res = await fetch(`${API_URL}/api/properties`, { headers: headers as HeadersInit });
 
                 if (res.ok) {
                     setProperties(await res.json());
                 } else {
-                    // Fallback to demo properties
-                    setProperties([
-                        { property_id: "prop-1", name: "Club Med Cherating", slug: "cherating" },
-                        { property_id: "prop-2", name: "Club Med Borneo", slug: "borneo" }
-                    ]);
+                    console.log("Failed to fetch properties, using fallback for demo if needed");
                 }
             } catch (error) {
                 console.error("Failed to fetch properties", error);
@@ -40,10 +39,44 @@ export function PropertySwitcher() {
         };
 
         fetchProperties();
-    }, [user, headers]);
+    }, [user, headers.Authorization]);
+
+    const handleCreateProperty = async () => {
+        const name = window.prompt("Enter new property name:");
+        if (!name) return;
+
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            const res = await fetch(`${API_URL}/api/properties`, {
+                method: "POST",
+                headers: {
+                    ...(headers as Record<string, string>),
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ name })
+            });
+
+            if (res.ok) {
+                const newProp = await res.json();
+                setProperties([...properties, newProp]);
+                switchProperty(newProp.property_id);
+            } else {
+                const err = await res.json();
+                alert(`Error: ${err.detail}`);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Failed to create property");
+        }
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        switchProperty(e.target.value);
+        const val = e.target.value;
+        if (val === "create_new") {
+            handleCreateProperty();
+        } else {
+            switchProperty(val);
+        }
     };
 
     return (
@@ -60,6 +93,8 @@ export function PropertySwitcher() {
                         {property.name}
                     </option>
                 ))}
+                <option disabled>──────────</option>
+                <option value="create_new"> + Create New Property</option>
             </select>
         </div>
     );

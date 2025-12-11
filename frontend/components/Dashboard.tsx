@@ -147,10 +147,10 @@ function DashboardContent() {
 
             const [summaryRes, categoriesRes, trendsRes, agentsRes] =
                 await Promise.all([
-                    fetch(`${API_BASE}/api/metrics/summary${query}`),
-                    fetch(`${API_BASE}/api/metrics/categories${query}`),
-                    fetch(`${API_BASE}/api/metrics/trends${query}`),
-                    fetch(`${API_BASE}/api/metrics/agents${query}`),
+                    fetch(`${API_BASE}/api/metrics/summary${query}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
+                    fetch(`${API_BASE}/api/metrics/categories${query}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
+                    fetch(`${API_BASE}/api/metrics/trends${query}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
+                    fetch(`${API_BASE}/api/metrics/agents${query}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
                 ]);
 
             if (!summaryRes.ok) throw new Error("Failed to fetch summary metrics");

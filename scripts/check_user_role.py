@@ -24,6 +24,12 @@ def check_role(email: str):
         db.close()
 
 if __name__ == "__main__":
+    # Force DB Path
+    db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend', 'resort_genius.db'))
+    os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
+    
     import logging
     logging.getLogger('sqlalchemy').setLevel(logging.ERROR)
-    check_role("super@admin.com")
+    
+    email = sys.argv[1] if len(sys.argv) > 1 else "super@admin.com"
+    check_role(email)

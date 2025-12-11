@@ -100,9 +100,11 @@ app.include_router(admin.router)
 app.include_router(history.router)
 
 # Subscription endpoints
-from app.api import subscriptions
+from app.api import subscriptions, billing, properties
 app.include_router(subscriptions.router)
 app.include_router(subscriptions.webhook_router)
+app.include_router(billing.router) # New Billing API
+app.include_router(properties.router) # New Property API
 
 # Super Admin endpoints
 app.include_router(super_admin.router)

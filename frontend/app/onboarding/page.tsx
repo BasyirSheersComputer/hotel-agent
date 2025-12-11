@@ -1,8 +1,8 @@
 
 "use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Check, Loader2 } from 'lucide-react';
 
@@ -16,7 +16,7 @@ const PLANS = [
     {
         id: 'pro',
         name: 'Professional',
-        price: '$49/mo',
+        price: 'RM 10,000/mo',
         features: ['3 Properties', 'Advanced KB', 'Email Support', 'Analytics']
     },
     {
@@ -29,7 +29,8 @@ const PLANS = [
 
 export default function OnboardingPage() {
     const router = useRouter();
-    const { register } = useAuth();
+    const searchParams = useSearchParams();
+    const { createOrganization } = useAuth();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
 
@@ -39,34 +40,57 @@ export default function OnboardingPage() {
     const [name, setName] = useState('');
     const [orgName, setOrgName] = useState('');
     const [selectedPlan, setSelectedPlan] = useState('free');
+    const [subscriptionId, setSubscriptionId] = useState<string | undefined>(undefined);
 
-    const handleRegister = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            // Slugify org name
-            const orgSlug = orgName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-            await register(email, password, name, orgSlug);
-            setStep(2); // Move to Plan Selection
-        } catch (err) {
-            console.error(err);
-            alert("Registration failed. Please try again.");
-        } finally {
-            setLoading(false);
+    // Check for return from checkout
+    useEffect(() => {
+        const stepParam = searchParams.get('step');
+        const subIdParam = searchParams.get('sub_id');
+        if (stepParam === '3' && subIdParam) {
+            setSubscriptionId(subIdParam);
+            setStep(3);
+
+            // Restore form data from local storage if lost (simple version)
+            const info = localStorage.getItem('onboarding_info');
+            if (info) {
+                const { email: sEmail, name: sName, orgName: sOrgName, password: sPass } = JSON.parse(info);
+                if (!email) setEmail(sEmail);
+                if (!name) setName(sName);
+                if (!orgName) setOrgName(sOrgName);
+                if (!password) setPassword(sPass);
+            }
         }
+    }, [searchParams]);
+
+    const handleStep1 = (e: React.FormEvent) => {
+        e.preventDefault();
+        setStep(2);
     };
 
     const handlePayment = async () => {
         setLoading(true);
-        // Simulate Stripe Checkout Delay
-        setTimeout(() => {
+        try {
+            // Save state
+            localStorage.setItem('onboarding_info', JSON.stringify({ email, name, orgName, password }));
+            // Redirect to checkout
+            router.push(`/checkout?plan=${selectedPlan}`);
+        } catch (err) {
+            console.error(err);
             setLoading(false);
-            setStep(3); // Success
-        }, 1500);
+        }
     };
 
-    const finishOnboarding = () => {
-        router.push('/super-admin/dashboard');
+    const finishOnboarding = async () => {
+        setLoading(true);
+        try {
+            await createOrganization(email, password, name, orgName, subscriptionId);
+            router.push('/dashboard');
+        } catch (err) {
+            console.error(err);
+            alert("Account creation failed.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -89,7 +113,7 @@ export default function OnboardingPage() {
                 {step === 1 && (
                     <div className="bg-slate-900 p-8 rounded-2xl border border-slate-800 max-w-md mx-auto shadow-2xl">
                         <h2 className="text-2xl font-bold mb-6 text-center">Create your Workspace</h2>
-                        <form onSubmit={handleRegister} className="space-y-4">
+                        <form onSubmit={handleStep1} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-slate-400">Organization Name</label>
                                 <input type="text" placeholder="e.g. Club Med Bali" value={orgName} onChange={e => setOrgName(e.target.value)} required
@@ -112,7 +136,7 @@ export default function OnboardingPage() {
                             </div>
                             <button type="submit" disabled={loading}
                                 className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors flex justify-center items-center disabled:opacity-50 disabled:cursor-not-allowed">
-                                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Get Started"}
+                                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Continue to Plan"}
                             </button>
                         </form>
                     </div>
@@ -167,8 +191,8 @@ export default function OnboardingPage() {
                             Your workspace <strong>{orgName}</strong> is ready.
                             Start adding your properties and knowledge base to see the magic happen.
                         </p>
-                        <button onClick={finishOnboarding} className="px-6 py-3 bg-white text-slate-900 font-bold rounded-lg hover:bg-slate-200 transition-colors">
-                            Go to Dashboard
+                        <button onClick={finishOnboarding} disabled={loading} className="px-6 py-3 bg-white text-slate-900 font-bold rounded-lg hover:bg-slate-200 transition-colors flex items-center justify-center mx-auto disabled:opacity-50">
+                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Go to Dashboard"}
                         </button>
                     </div>
                 )}

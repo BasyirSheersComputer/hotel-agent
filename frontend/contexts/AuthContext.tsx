@@ -31,6 +31,7 @@ interface AuthContextType extends AuthState {
     register: (email: string, password: string, name: string, orgSlug: string) => Promise<void>;
     checkAuthStatus: () => Promise<void>;
     switchProperty: (propertyId: string) => Promise<void>;
+    createOrganization: (email: string, password: string, name: string, orgName: string, subscriptionId?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -208,8 +209,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await checkAuthStatus();
     };
 
+    const createOrganization = async (email: string, password: string, name: string, orgName: string, subscriptionId?: string) => {
+        setState(prev => ({ ...prev, isLoading: true, error: null }));
+        try {
+            const res = await fetch(`${API_URL}/api/auth/create-org`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email,
+                    password,
+                    name,
+                    org_name: orgName,
+                    subscription_id: subscriptionId
+                }),
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.detail || "Organization creation failed");
+            }
+
+            const data = await res.json();
+            localStorage.setItem("token", data.access_token);
+
+            setState({
+                user: data.user,
+                token: data.access_token,
+                isLoading: false,
+                isDemo: data.user.is_demo,
+                error: null,
+            });
+        } catch (error: any) {
+            const errorMessage = error instanceof Error ? error.message : "Organization creation failed";
+            setState(prev => ({
+                ...prev,
+                isLoading: false,
+                error: errorMessage,
+            }));
+            throw error;
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ ...state, login, logout, register, checkAuthStatus, switchProperty }}>
+        <AuthContext.Provider value={{ ...state, login, logout, register, checkAuthStatus, switchProperty, createOrganization }}>
             {children}
         </AuthContext.Provider>
     );

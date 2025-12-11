@@ -75,10 +75,10 @@ export default function AdminPage() {
                             </span>
                         )}
                         <button
-                            onClick={() => router.push("/")}
+                            onClick={() => router.push("/dashboard")}
                             className="px-4 py-2 text-slate-600 hover:text-slate-900 font-medium"
                         >
-                            ← Back to Chat
+                            ← Dashboard
                         </button>
                         <button
                             onClick={() => router.push("/dashboard")}

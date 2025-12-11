@@ -2,6 +2,8 @@
 import sqlite3
 import os
 import sys
+# Ensure backend is in path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend')))
 
 # Define expected schema additions
 # Table -> {Column: Type}
@@ -36,6 +38,12 @@ SCHEMA_CHANGES = {
         "revenue_potential": "DECIMAL(10, 2) DEFAULT 0",
         "sentiment_score": "DECIMAL(3, 2) DEFAULT 0",
         "csat_rating": "INTEGER DEFAULT 5"
+    },
+    "organizations": {
+        "billing_account_id": "CHAR(32)",
+        "subscription_status": "VARCHAR(50) DEFAULT 'free'",
+        "stripe_customer_id": "VARCHAR(255)",
+        "current_period_end": "DATETIME"
     }
 }
 
@@ -90,6 +98,18 @@ def migrate():
             else:
                 pass # print(f"{col} exists in {table}")
                 
+    # Create new tables if they don't exist
+    from app.database import engine, Base
+    # Make sure models are imported so they are registered with Base
+    from app.models import BillingAccount, Subscription, Organization
+    
+    print("Creating new tables (if missing)...")
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("Tables created/verified.")
+    except Exception as e:
+        print(f"Error creating tables: {e}")
+
     conn.commit()
     conn.close()
     print("Migration complete.")

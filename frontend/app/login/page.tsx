@@ -28,7 +28,13 @@ export default function LoginPage() {
     // Redirect if already logged in
     useEffect(() => {
         if (user && !isLoading) {
-            router.push("/");
+            if (user.role === 'super_admin') {
+                router.push('/super-admin/dashboard');
+            } else if (['tenant_admin', 'property_manager', 'admin'].includes(user.role)) {
+                router.push('/dashboard');
+            } else {
+                router.push('/');
+            }
         }
     }, [user, isLoading, router]);
 
@@ -108,9 +114,14 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">
-                            Password
-                        </label>
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-sm font-medium text-slate-300">
+                                Password
+                            </label>
+                            <a href="/forgot-password" className="text-xs text-cyan-400 hover:text-cyan-300 hover:underline">
+                                Forgot Password?
+                            </a>
+                        </div>
                         <input
                             type="password"
                             value={password}

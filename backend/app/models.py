@@ -66,6 +66,7 @@ class Organization(Base):
     
     # Billing / Stripe
     stripe_customer_id = Column(String(255), unique=True, nullable=True)
+    billing_account_id = Column(UUIDType, ForeignKey("billing_accounts.account_id"), nullable=True)
     subscription_status = Column(String(50), default="free") # free, active, past_due, canceled
     current_period_end = Column(DateTime(timezone=True), nullable=True)
     
@@ -73,6 +74,46 @@ class Organization(Base):
     users = relationship("User", back_populates="organization", cascade="all, delete-orphan")
     sessions = relationship("ChatSession", back_populates="organization", cascade="all, delete-orphan")
     kb_documents = relationship("KBDocument", back_populates="organization", cascade="all, delete-orphan")
+    billing_account = relationship("BillingAccount", back_populates="organizations")
+
+class BillingAccount(Base):
+    """
+    Billing Account table.
+    """
+    __tablename__ = "billing_accounts"
+    __table_args__ = {'extend_existing': True}
+    
+    account_id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
+    stripe_customer_id = Column(String(255), unique=True, nullable=True)
+    billing_email = Column(String(255))
+    billing_name = Column(String(255))
+    balance = Column(DECIMAL(10, 2), default=0.00)
+    currency = Column(String(3), default="MYR")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    organizations = relationship("Organization", back_populates="billing_account")
+    subscriptions = relationship("Subscription", back_populates="billing_account", cascade="all, delete-orphan")
+
+class Subscription(Base):
+    """
+    Subscription table.
+    """
+    __tablename__ = "subscriptions"
+    __table_args__ = {'extend_existing': True}
+    
+    sub_id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
+    account_id = Column(UUIDType, ForeignKey("billing_accounts.account_id", ondelete="CASCADE"), nullable=False, index=True)
+    stripe_subscription_id = Column(String(255), unique=True, nullable=True)
+    plan_id = Column(String(50), nullable=False) # e.g. pro_monthly
+    status = Column(String(50), default="active") # active, past_due, canceled
+    current_period_start = Column(DateTime(timezone=True))
+    current_period_end = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    billing_account = relationship("BillingAccount", back_populates="subscriptions")
+
 
 class Property(Base):
     """

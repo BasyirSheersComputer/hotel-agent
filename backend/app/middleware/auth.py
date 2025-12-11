@@ -100,6 +100,23 @@ async def get_current_user(
         # Get organization
         org = db.query(Organization).filter(Organization.org_id == org_id).first()
         
+        # Check Subscription Status
+        if org and org.subscription_status in ["canceled", "past_due"]:
+             # Allow billing and auth endpoints
+             # Check path to allow safe endpoints
+             path = request.url.path
+             # Note: request.url.path might include prefix, ensure check is robust
+             if not (
+                 "/api/billing" in path or 
+                 "/api/auth" in path or 
+                 "/docs" in path or 
+                 "/openapi.json" in path
+             ):
+                 raise HTTPException(
+                     status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                     detail="Subscription canceled or past due. Please reactivate your plan.",
+                 )
+        
         current_user = CurrentUser(
             user_id=str(user.user_id),
             org_id=str(user.org_id),

@@ -44,6 +44,7 @@ class CreateOrgRequest(BaseModel):
     password: str
     name: str
     org_name: str  # Create new org
+    subscription_id: Optional[str] = None # Link to billing
 
 
 class TokenResponse(BaseModel):
@@ -287,76 +288,111 @@ async def create_organization(
     
     # SaaS mode - create organization and admin user
     import re
+    import traceback
     
-    # Generate slug from org name
-    slug = re.sub(r'[^a-z0-9]+', '-', request.org_name.lower()).strip('-')
-    
-    # Check if slug already exists
-    existing_org = db.query(Organization).filter(Organization.slug == slug).first()
-    if existing_org:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Organization '{slug}' already exists. Try a different name."
+    try:
+        with open("debug_auth.log", "a") as f:
+            f.write(f"Starting create_org for {request.email} with sub_id={request.subscription_id}\n")
+
+        # Generate slug from org name
+        slug = re.sub(r'[^a-z0-9]+', '-', request.org_name.lower()).strip('-')
+        
+        # Check if slug already exists
+        existing_org = db.query(Organization).filter(Organization.slug == slug).first()
+        if existing_org:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Organization '{slug}' already exists. Try a different name."
+            )
+        
+        # Check if email already exists in any org
+        existing_user = db.query(User).filter(User.email == request.email).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already registered. Please login or use a different email."
+            )
+        
+        # Create organization
+        org = Organization(
+            org_id=uuid.uuid4(),
+            name=request.org_name,
+            slug=slug,
+            plan="free",  # Default to free plan
+            max_users=10,
+            max_kb_docs=100
         )
-    
-    # Check if email already exists in any org
-    existing_user = db.query(User).filter(User.email == request.email).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered. Please login or use a different email."
+        
+        # Link Billing if provided
+        if request.subscription_id:
+            with open("debug_auth.log", "a") as f:
+                f.write(f"Linking subscription {request.subscription_id}\n")
+            
+            from app.models import Subscription
+            # Find subscription to get account_id and plan
+            sub = db.query(Subscription).filter(Subscription.sub_id == request.subscription_id).first()
+            if sub:
+                org.billing_account_id = sub.account_id
+                org.subscription_status = sub.status
+                org.plan = sub.plan_id.split('_')[0] if '_' in sub.plan_id else sub.plan_id # pro_monthly -> pro
+                
+                with open("debug_auth.log", "a") as f:
+                    f.write(f"Found subscription. Account: {sub.account_id}, Status: {sub.status}\n")
+            else:
+                 with open("debug_auth.log", "a") as f:
+                    f.write(f"Subscription NOT FOUND\n")
+
+        db.add(org)
+        db.flush()  # Get org_id without committing
+        
+        # Create admin user
+        user = User(
+            user_id=uuid.uuid4(),
+            org_id=org.org_id,
+            email=request.email,
+            password_hash=AuthService.hash_password(request.password),
+            name=request.name,
+            role="admin"  # First user is always admin
         )
-    
-    # Create organization
-    org = Organization(
-        org_id=uuid.uuid4(),
-        name=request.org_name,
-        slug=slug,
-        plan="free",  # Default to free plan
-        max_users=10,
-        max_kb_docs=100
-    )
-    db.add(org)
-    db.flush()  # Get org_id without committing
-    
-    # Create admin user
-    user = User(
-        user_id=uuid.uuid4(),
-        org_id=org.org_id,
-        email=request.email,
-        password_hash=AuthService.hash_password(request.password),
-        name=request.name,
-        role="admin"  # First user is always admin
-    )
-    db.add(user)
-    
-    # Commit both together
-    db.commit()
-    db.refresh(user)
-    db.refresh(org)
-    
-    # Create token
-    token = AuthService.create_access_token(
-        data={
-            "sub": str(user.user_id),
-            "org_id": str(user.org_id),
-            "email": user.email,
-            "role": user.role
-        }
-    )
-    
-    return TokenResponse(
-        access_token=token,
-        user={
-            "user_id": str(user.user_id),
-            "email": user.email,
-            "name": user.name,
-            "role": user.role,
-            "org_id": str(user.org_id),
-            "org_slug": org.slug,
-            "is_demo": False
-        }
-    )
+        db.add(user)
+        
+        # Commit both together
+        db.commit()
+        db.refresh(user)
+        db.refresh(org)
+        
+        with open("debug_auth.log", "a") as f:
+            f.write(f"Success! Org: {org.org_id}, User: {user.user_id}\n")
+        
+        # Create token
+        token = AuthService.create_access_token(
+            data={
+                "sub": str(user.user_id),
+                "org_id": str(user.org_id),
+                "email": user.email,
+                "role": user.role
+            }
+        )
+        
+        return TokenResponse(
+            access_token=token,
+            user={
+                "user_id": str(user.user_id),
+                "email": user.email,
+                "name": user.name,
+                "role": user.role,
+                "org_id": str(user.org_id),
+                "org_slug": org.slug,
+                "is_demo": False
+            }
+        )
+    except Exception as e:
+        with open("debug_auth.log", "a") as f:
+            f.write(f"ERROR: {str(e)}\n")
+            f.write(traceback.format_exc())
+            f.write("\n")
+        db.rollback()
+        raise e
 
 
 @router.get("/me", response_model=UserResponse)
