@@ -30,7 +30,8 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 # - CORS restricted to whitelisted origins
 # =============================================================================
 
-DEMO_MODE = False # Hardcoded for testing
+DEMO_MODE = True # Force enabled for demo-v1
+print(f"DEBUG: SETTINGS_PY LOADED. DEMO_MODE={DEMO_MODE}")
 
 # Demo tenant and user (used when DEMO_MODE=true)
 DEMO_ORG_ID = os.getenv("DEMO_ORG_ID", "00000000-0000-0000-0000-000000000001")

@@ -38,6 +38,15 @@ export default function LoginPage() {
         }
     }, [user, isLoading, router]);
 
+    // Pre-fill demo credentials
+    useEffect(() => {
+        if (isDemo) {
+            setEmail("demo@resort-genius.com");
+            setPassword("demo123");
+            setOrgSlug("demo-hotel");
+        }
+    }, [isDemo]);
+
     // If demo mode AND user is authenticated, show demo indicator (success state)
     // If not authenticated, we should fall through to the login form
     if (isDemo && !isLoading && user) {

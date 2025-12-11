@@ -42,11 +42,12 @@ if (Test-Path $lockFile) {
 Write-Host "Starting Backend (Port 8001 to avoid conflicts)..." -ForegroundColor Cyan
 # Inject Env Vars for SaaS Mode
 $backendEnv = @{
-    "DEMO_MODE" = "false";
+    "DEMO_MODE" = "true";
+    "LOCAL_DEV" = "true";
     "NEXT_PUBLIC_API_URL" = "http://localhost:8001";
     "PORT" = "8001"
 }
-Start-Process -FilePath "cmd.exe" -ArgumentList "/k cd backend && set DEMO_MODE=false&& python -m uvicorn app.main:app --reload --port 8001" -WindowStyle Normal
+Start-Process -FilePath "cmd.exe" -ArgumentList "/k cd backend && set DEMO_MODE=true&& set LOCAL_DEV=true&& python -m uvicorn app.main:app --reload --port 8001" -WindowStyle Normal
 
 # Start Frontend
 Write-Host "Waiting for Backend to initialize..." -ForegroundColor Cyan

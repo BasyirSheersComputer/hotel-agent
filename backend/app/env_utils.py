@@ -66,7 +66,7 @@ def load_env_robustly():
                 continue
     
     # Fallback to load_dotenv default behavior
-    load_dotenv(override=True)
+    load_dotenv(override=False)
     
     # Load GCP secrets LAST to ensure they override local .env
     # Skip for local development if LOCAL_DEV is set

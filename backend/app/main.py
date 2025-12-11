@@ -116,6 +116,7 @@ app.include_router(super_admin.router)
 @app.get("/")
 async def root():
     """Root endpoint with system info."""
+    print(f"DEBUG: ROOT ENDPOINT HIT. DEMO_MODE in main.py is currently: {DEMO_MODE}")
     return {
         "service": "Resort Genius API",
         "version": "2.0.0",
