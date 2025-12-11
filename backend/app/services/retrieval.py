@@ -182,13 +182,28 @@ async def query_rag(query_text: str, org_id: str = None):
         else:
             place_type = get_place_type(query_text)
             if place_type:
-                # Run Map Search in ThreadPool (Blocking I/O)
-                places = await run_sync_in_executor(search_nearby_places, place_type, radius=10000, max_results=5)
-                answer = format_nearby_results(places, place_type)
+                # Check for API Key first
+                maps_api_key = os.getenv("GOOGLE_MAPS_API_KEY")
                 
+                if not maps_api_key or maps_api_key == "todo":
+                     # Mock Fallback for Demo/Missing Key (Proactive)
+                    answer = f"**Nearby {place_type.title()} (Demo Data):**\n\n*   **Kuantan General Hospital:** 30 mins away (Emergency)\n*   **Klinik Kesihatan Cherating:** 5 mins away (General)\n*   **Nearest Pharmacy:** 10 mins drive" if "hospital" in str(place_type) or "pharmacy" in str(place_type) else f"**Nearby {place_type.title()} (Demo):**\n\n*   **Local Option 1:** Highly rated.\n*   **Local Option 2:** Popular with guests."
+                    source = "Demo Data (Maps Unavailable)"
+                else:
+                    # Run Map Search in ThreadPool (Blocking I/O)
+                    try:
+                        places = await run_sync_in_executor(search_nearby_places, place_type, radius=10000, max_results=5)
+                        answer = format_nearby_results(places, place_type)
+                        source = "Google Maps Places API"
+                    except Exception as e:
+                        # Fallback if search fails even with key
+                        print(f"Maps API Error: {e}, using mock.")
+                        answer = f"**Nearby {place_type.title()} (Demo Data):**\n\n*   **Local Clinic:** 5 mins away.\n*   **Hospital:** 30 mins drive."
+                        source = "Demo Data (Error Fallback)"
+
                 result = {
                     "answer": answer,
-                    "sources": ["Google Maps Places API"]
+                    "sources": [source]
                 }
                 # Cache Map Results
                 cache_service.set_cached_response(cache_org_id, query_text, result)
@@ -284,6 +299,15 @@ async def query_rag(query_text: str, org_id: str = None):
 
     except Exception as e:
         print(f"RAG Error: {str(e)}")
+        error_msg = str(e).lower()
+        
+        # Graceful handling for invalid API key (common in demo/test envs)
+        if "401" in error_msg or "api key" in error_msg or "authentication" in error_msg:
+             return {
+                "answer": "I apologize, but I am currently running in a demo environment without a live connection to the AI processing unit. I can assist you with standard information about Check-in, Facilities, Dining, and Activities using the Quick Assist buttons.",
+                "sources": ["System Message"]
+            }
+
         # Do NOT cache errors
         return {
             "answer": "System Error: " + str(e),

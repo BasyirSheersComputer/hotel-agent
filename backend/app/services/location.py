@@ -160,6 +160,8 @@ PLACE_TYPE_MAPPINGS = {
     "clinic": "doctor",
     "doctor": "doctor",  # Added: singular doctor
     "doctors": "doctor",  # Added: plural doctors
+    "dentist": "dentist",
+    "dentists": "dentist",
     "medical": "hospital",
     "pharmacy": "pharmacy",
     "pharmacies": "pharmacy",  # Added: plural
