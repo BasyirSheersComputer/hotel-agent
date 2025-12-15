@@ -1,0 +1,12 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build', 
+      '-t', 'gcr.io/club-med-agent/hotel-frontend-v2', 
+      '--build-arg', 'NEXT_PUBLIC_API_URL=${_NEXT_PUBLIC_API_URL}', 
+      '.'
+    ]
+images:
+  - 'gcr.io/club-med-agent/hotel-frontend-v2'
+substitutions:
+  _NEXT_PUBLIC_API_URL: ''
