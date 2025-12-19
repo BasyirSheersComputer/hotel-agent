@@ -99,13 +99,13 @@
 ### Phase 4: SaaS Platform Core (In Progress)
 - [x] **User Authentication (SSO/JWT)**
 - [x] **Multi-tenant Data Isolation** (Base `org_id`)
-- [ ] **Multi-Property Architecture** (`property_id` layer)
-- [ ] **RBAC Implementation** (Roles & Permissions middleware)
-- [ ] **Onboarding Flow** (Signup -> Stripe Checkout -> Org Creation)
+- [x] **Multi-Property Architecture** (`property_id` layer, Backend Models Ready)
+- [x] **RBAC Implementation** (Roles & Permissions middleware)
+- [x] **Onboarding Flow** (Signup & Stripe Checkout APIs)
 
 ### Phase 5: Advanced Enterprise Features (New)
-- [ ] **SaaS Controller Service** (Super Admin Dashboard)
-- [ ] **Stripe Deep Integration** (Webhooks, Usage Metering, Failure Handling)
+- [/] **SaaS Controller Service** (Super Admin Dashboard, Backend API Ready)
+- [/] **Stripe Deep Integration** (Webhooks, Checkout, Usage Metering)
 - [ ] **ROI Comparison Engine**
 - [ ] **Custom Dashboards** (Role-based views)
 - [ ] **Production Readiness** (Disable Demo Mode, Full Security Audit)
