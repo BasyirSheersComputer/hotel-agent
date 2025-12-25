@@ -177,5 +177,62 @@
                 "font": "Inter-500"
             }
         }
+    },
+    "login": {
+        "name": "Authentication",
+        "style": "split_screen_gradient",
+        "components": [
+            {
+                "id": "login_form",
+                "type": "card",
+                "background": "glass_white",
+                "fields": [
+                    "email",
+                    "password",
+                    "remember_me"
+                ],
+                "actions": [
+                    "sign_in",
+                    "forgot_password",
+                    "register_link"
+                ]
+            },
+            {
+                "id": "hero_section",
+                "type": "branded_showcase",
+                "content": "Resort Genius Value Prop",
+                "background": "gradient_navy_gold"
+            }
+        ]
+    },
+    "document_manager": {
+        "name": "KnowledgeBaseManager",
+        "layout": "list_detail",
+        "components": [
+            {
+                "id": "upload_zone",
+                "type": "drag_drop_area",
+                "accepted_types": [
+                    ".pdf",
+                    ".txt",
+                    ".docx"
+                ],
+                "max_size_mb": 10
+            },
+            {
+                "id": "document_list",
+                "type": "table",
+                "columns": [
+                    "filename",
+                    "upload_date",
+                    "status",
+                    "size"
+                ],
+                "actions": [
+                    "delete",
+                    "reprocess"
+                ]
+            }
+        ]
     }
 }

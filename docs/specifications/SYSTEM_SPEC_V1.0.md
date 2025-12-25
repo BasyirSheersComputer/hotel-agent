@@ -1,23 +1,24 @@
-# Resort Genius v1.0 - System Specification
-**Stable Build Documentation**
+# Resort Genius v2.0 - System Specification
+**Development Build Documentation (SaaS)**
 
-**Version**: 1.1.0  
-**Status**: Enhanced Production Build (Single-Tenant)  
-**Date**: 2025-12-10  
-**Purpose**: Complete system specification including dashboard enhancements
+**Version**: 2.0.0-alpha
+**Status**: In Development (Multi-Tenant SaaS)
+**Date**: 2025-12-25
+**Purpose**: System specification for the Multi-Tenant SaaS Platform
 
 ---
 
 ## 📋 Executive Summary
 
-Resort Genius v1.0 is a **single-tenant AI chatbot** for hotel call center agents that provides instant answers to guest inquiries by combining internal knowledge base (RAG) with real-time external data (Google Maps). This stable build has been validated and is production-ready for a single hotel deployment.
+Resort Genius v2.0 is a **Multi-Tenant SaaS AI Platform** for hospitality. It scales the proven v1.0 chatbot technology to support multiple organizations and properties from a single deployment, complete with user authentication, role-based access control (RBAC), and isolated data environments.
 
-### Key Capabilities
-- ✅ Hybrid intelligence (RAG + Google Maps)
-- ✅ Smart query routing (95%+ accuracy)
-- ✅ Performance analytics dashboard
-- ✅ Real-time metrics tracking
-- ✅ Cloud-deployable (GCP Cloud Run)
+### Key Capabilities (v2.0)
+- ✅ **Multi-Tenancy**: Single codebase serving multiple hotel chains securely.
+- ✅ **User Authentication**: JWT-based login with RBAC (Admin, Agent, Viewer).
+- ✅ **Data Isolation**: Organization and Property-level scoping for all data.
+- ✅ **SaaS Billing**: Integrated Stripe metering and subscription management (In Progress).
+- ✅ **Cloud-Native**: Dockerized and ready for auto-scaling on Cloud Run + Cloud SQL.
+- ✅ **Legacy Features**: Retains all v1.0 RAG + Maps + Analytics capabilities.
 
 ---
 
@@ -36,8 +37,9 @@ Resort Genius v1.0 is a **single-tenant AI chatbot** for hotel call center agent
 - LangChain (RAG orchestration)
 - OpenAI API (GPT-4o, text-embedding-3-small)
 - Google Maps Places API
-- SQLite (analytics database)
-- ChromaDB (vector store)
+- **PostgreSQL 15+** (Primary relational database)
+- ChromaDB / **pgvector** (Vector store)
+- **Redis** (Caching layer)
 - Deployed on: Cloud Run / Local uvicorn
 
 **External Services**:
@@ -50,41 +52,40 @@ Resort Genius v1.0 is a **single-tenant AI chatbot** for hotel call center agent
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                   Frontend (Next.js)                     │
-│              http://localhost:3000                       │
-│                                                           │
-│  Pages:                                                   │
-│  - / (Chat Interface)                                    │
-│  - /dashboard (Performance Dashboard)                    │
+│                (Auth & RBAC Protected)                   │
+│                                                         │
+│  Pages:                                                 │
+│  - /login (Auth)                                        │
+│  - / (Chat - Scoped to Property)                        │
+│  - /dashboard (Analytics - Scoped to Org/Prop)          │
 └────────────────────┬──────────────────────────────────────┘
                      │
-                     │ HTTP/JSON
+                     │ HTTP/JSON + JWT Bearer Token
                      │
 ┌────────────────────▼──────────────────────────────────────┐
 │                Backend API (FastAPI)                      │
-│             http://localhost:8000                         │
+│        [AuthMiddleware] -> [TenantMiddleware]             │
 │                                                           │
 │  Endpoints:                                               │
-│  - POST /api/chat                                        │
-│  - GET /api/metrics/summary                              │
-│  - GET /api/metrics/categories                           │
-│  - GET /api/metrics/trends                               │
-│  - GET /api/metrics/agents                               │
+│  - POST /api/auth/login                                   │
+│  - POST /api/chat (Scoped)                                │
+│  - GET /api/metrics/* (Scoped)                            │
 └─────┬────────────────────┬────────────────────────────────┘
       │                    │
       │                    │
 ┌─────▼──────┐      ┌──────▼─────────┐
-│ ChromaDB   │      │ SQLite         │
-│ (Vectors)  │      │ (Metrics)      │
+│ ChromaDB/  │      │ PostgreSQL     │
+│ pgvector   │      │ (Cloud SQL)    │
 │            │      │                │
-│ - Knowledge│      │ - queries      │
-│   chunks   │      │ - chat_sessions│
-│ - Embeddings│     │ - agents       │
-└─────┬──────┘      └────────────────┘
-      │
+│ - Embeddings│     │ - Users/Orgs   │
+│   (Scoped)  │     │ - Queries      │
+└─────┬──────┘      │ - Billing      │
+      │             └────────────────┘
 ┌─────▼──────────────────────────────┐
 │      External APIs                 │
 │  - OpenAI (GPT-4o, Embeddings)     │
 │  - Google Maps Places API          │
+│  - Stripe (Billing)                │
 └────────────────────────────────────┘
 ```
 
@@ -431,6 +432,8 @@ npm run dev
 ```
 OPENAI_API_KEY=sk-...
 GOOGLE_MAPS_API_KEY=AIza...
+DATABASE_URL=postgresql://user:pass@host:5432/db
+JWT_SECRET_KEY=your-secret-key-change-in-prod
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 

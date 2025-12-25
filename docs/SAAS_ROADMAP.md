@@ -72,7 +72,7 @@ To meet "World-Class" standards, the following areas require immediate prioritiz
 - [x] Migrate to Production Database (PostgreSQL)
 - [ ] Enable PostgreSQL Row-Level Security (RLS)
 - [x] Add tenant context middleware
-- [ ] Isolated KB embeddings per organization
+- [x] Isolated KB management (DocumentManager UI)
 
 ### 4. Frontend Integration
 **Current**: Full auth flow with login and session management, TypeScript type safety
@@ -81,7 +81,7 @@ To meet "World-Class" standards, the following areas require immediate prioritiz
 - [x] Add login/signup pages
 - [x] Fix TypeScript `any` types in Dashboard, ChatInterface, AuthContext (Dec 2024)
 - [x] Fix register() function signature in LoginForm (Dec 2024)
-- [ ] Add organization onboarding flow (Registration API exists, UI pending)
+- [x] Add organization onboarding flow (Registration API & UI)
 - [x] Add user session management
 - [x] UI Refinements (History Drawer, Mobile responsiveness)
 

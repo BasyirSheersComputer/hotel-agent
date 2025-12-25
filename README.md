@@ -118,17 +118,18 @@ Frontend → Backend (Multi-tenant) → PostgreSQL + RLS
 | Persistent Chat History | ✅ |
 | User Authentication | ❌ |
 
-### v2.0 - SaaS (Development Branch: `feature/v2-saas`)
+### v2.0 - SaaS (Development Branch: `feature/v2-saas` & `feature/auth-dashboard-fixes`)
 
 | Feature | Status |
 |---------|--------|
 | All v1.0 Features | ✅ |
-| User Authentication (JWT) | 🚧 In Progress |
-| Multi-Tenant Isolation | 🚧 In Progress |
+| User Authentication (JWT) | ✅ Done |
+| Multi-Tenant Isolation | ✅ Done |
+| Custom Dashboards | ✅ Done |
+| Knowledge Base Management | ✅ Done |
+| PostgreSQL + pgvector | ✅ Done |
 | Persistent Chat History | 📅 Planned |
-| Admin Dashboard (KB Mgmt) | 📅 Planned |
 | Multi-Language Support | 📅 Planned |
-| PostgreSQL + pgvector | 🚧 In Progress |
 | Redis Sessions | 📅 Planned |
 | Cloud Storage Integration | 📅 Planned |
 
