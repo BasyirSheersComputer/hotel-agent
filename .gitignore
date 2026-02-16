@@ -29,6 +29,7 @@ ENV/
 .venv
 env.bak/
 venv.bak/
+*.bak
 
 # Node.js
 node_modules/
@@ -39,6 +40,7 @@ out/
 
 # Project Specific
 backend/.env
+backend/postgres_data/
 backend/chroma_db/
 backend/chroma_db_v2/
 backend/data/*.pdf
